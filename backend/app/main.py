@@ -75,8 +75,8 @@ def bootstrap_database():
     except Exception as e:
         logger.warning(f"Startup bootstrap warning (will retry on next request): {e}")
 
-# Root & Health Check
-@app.get("/", tags=["Root"])
+# Root & Health Check (Supports both GET and HEAD for UptimeRobot and health monitors)
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Root"])
 def root():
     return {
         "service": settings.PROJECT_NAME,
@@ -86,7 +86,7 @@ def root():
         "health_url": "/health"
     }
 
-@app.get("/health", tags=["Health"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 def health_check():
     return {
         "status": "healthy",
