@@ -48,6 +48,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setMobileMenuOpen(false);
   }, [pathname]);
 
+  // Prevent background scrolling when mobile admin drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
@@ -122,14 +134,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Mobile Off-Canvas Sliding Drawer */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-[100] md:hidden">
           {/* Backdrop overlay */}
           <div
-            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-300"
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-300 z-[101]"
             onClick={() => setMobileMenuOpen(false)}
           />
           {/* Slide-out drawer panel */}
-          <aside className="fixed inset-y-0 left-0 w-72 max-w-[82vw] bg-neutral-950 text-neutral-300 flex flex-col justify-between shadow-2xl z-50 animate-in slide-in-from-left duration-300">
+          <aside
+            style={{ backgroundColor: '#0a0a0a', opacity: 1 }}
+            className="fixed inset-y-0 left-0 w-72 max-w-[82vw] bg-neutral-950 text-neutral-300 flex flex-col justify-between shadow-2xl z-[102] overflow-y-auto transform transition-transform duration-300 ease-in-out"
+          >
             <div>
               <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">

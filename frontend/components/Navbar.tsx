@@ -37,6 +37,18 @@ export default function Navbar() {
     setUser(stored);
   }, []);
 
+  // Prevent background scrolling when mobile sliding drawer is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim();
@@ -66,8 +78,9 @@ export default function Navbar() {
   const isStaff = user && (user.roles?.includes('Super Admin') || (user.permissions && user.permissions.length > 0));
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-neutral-100 transition-all">
-      {/* Top utility banner */}
+    <>
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-100 transition-all">
+        {/* Top utility banner */}
       <div className="bg-neutral-900 text-neutral-300 text-xs py-1.5 px-4 text-center tracking-widest uppercase font-medium flex justify-between items-center max-w-7xl mx-auto">
         <span>JWAS COUTURE & ESSENTIALS</span>
         <div className="flex gap-4 items-center">
@@ -191,18 +204,22 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+    </header>
 
-      {/* Mobile Off-Canvas Sliding Drawer Menu */}
+      {/* Mobile Off-Canvas Sliding Drawer Menu (Rendered outside header to prevent backdrop-blur stacking issues) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
+        <div className="fixed inset-0 z-[100] md:hidden">
           {/* Backdrop overlay */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300 z-[101]"
             onClick={() => setMobileMenuOpen(false)}
           />
 
           {/* Sliding drawer panel */}
-          <aside className="fixed inset-y-0 left-0 w-80 max-w-[86vw] bg-white shadow-2xl z-50 flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out">
+          <aside
+            style={{ backgroundColor: '#ffffff', opacity: 1 }}
+            className="fixed inset-y-0 left-0 w-80 max-w-[86vw] bg-white text-neutral-900 shadow-2xl z-[102] flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out overflow-y-auto"
+          >
             <div>
               {/* Drawer header */}
               <div className="flex items-center justify-between pb-5 border-b border-neutral-100">
@@ -356,6 +373,6 @@ export default function Navbar() {
           </aside>
         </div>
       )}
-    </header>
+    </>
   );
 }
