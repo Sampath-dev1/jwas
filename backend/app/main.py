@@ -61,7 +61,17 @@ app.add_middleware(
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
-# Health Check
+# Root & Health Check
+@app.get("/", tags=["Root"])
+def root():
+    return {
+        "service": settings.PROJECT_NAME,
+        "status": "online",
+        "description": "JWAS Dynamic E-Commerce Backend API",
+        "docs_url": "/docs",
+        "health_url": "/health"
+    }
+
 @app.get("/health", tags=["Health"])
 def health_check():
     return {
