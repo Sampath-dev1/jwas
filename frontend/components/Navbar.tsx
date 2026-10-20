@@ -192,45 +192,168 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Off-Canvas Sliding Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-neutral-100 bg-white px-4 pt-3 pb-6 space-y-3">
-          <form onSubmit={handleSearchSubmit} className="relative mb-3">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onFocus={handleSearchFocus}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 pl-9 pr-4 text-sm"
-            />
-            <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
-          </form>
-          <Link
-            href="/shop"
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity duration-300"
             onClick={() => setMobileMenuOpen(false)}
-            className="block text-sm font-semibold tracking-wider uppercase text-neutral-900 py-1"
-          >
-            All Collections
-          </Link>
-          {categories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/categories/${cat.slug}`}
-              onClick={() => setMobileMenuOpen(false)}
-              className="block text-sm font-medium tracking-wider uppercase text-neutral-700 py-1"
-            >
-              {cat.name}
-            </Link>
-          ))}
-          {user && (
-            <button
-              onClick={handleLogout}
-              className="block w-full text-left text-sm font-medium text-red-600 pt-3 border-t border-neutral-100"
-            >
-              Sign Out
-            </button>
-          )}
+          />
+
+          {/* Sliding drawer panel */}
+          <aside className="fixed inset-y-0 left-0 w-80 max-w-[86vw] bg-white shadow-2xl z-50 flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out">
+            <div>
+              {/* Drawer header */}
+              <div className="flex items-center justify-between pb-5 border-b border-neutral-100">
+                <Link
+                  href="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3"
+                >
+                  <img
+                    src="/images/logo-emblem.png"
+                    alt="JWAS Logo"
+                    className="w-10 h-10 object-contain rounded-full shadow-2xs"
+                  />
+                  <div className="flex flex-col">
+                    <span className="tracking-[0.2em] text-lg font-black uppercase text-black leading-tight">
+                      JWAS
+                    </span>
+                    <span className="text-[8px] tracking-[0.25em] uppercase text-neutral-500 font-bold -mt-0.5">
+                      Collections
+                    </span>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 text-neutral-400 hover:text-black rounded"
+                  aria-label="Close menu"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Mobile Search */}
+              <form onSubmit={handleSearchSubmit} className="relative mt-5 mb-6">
+                <input
+                  type="text"
+                  placeholder="Search collections..."
+                  value={searchQuery}
+                  onFocus={handleSearchFocus}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-neutral-50 border border-neutral-300 rounded-lg py-2.5 pl-10 pr-4 text-xs font-medium text-neutral-900 focus:outline-none focus:border-black placeholder:text-neutral-500"
+                />
+                <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3 pointer-events-none" />
+              </form>
+
+              {/* Navigation Links */}
+              <nav className="space-y-1 text-xs uppercase font-bold tracking-wider max-h-[calc(100vh-320px)] overflow-y-auto">
+                <Link
+                  href="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded hover:bg-neutral-100 text-neutral-900 transition"
+                >
+                  All Collections
+                </Link>
+                <Link
+                  href="/shop?new_arrival=true"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded hover:bg-neutral-100 text-neutral-900 transition"
+                >
+                  New Arrivals
+                </Link>
+                <Link
+                  href="/shop?best_seller=true"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2.5 rounded hover:bg-neutral-100 text-neutral-900 transition"
+                >
+                  Best Sellers
+                </Link>
+
+                {categories.length > 0 && (
+                  <div className="pt-3 pb-1">
+                    <p className="px-3 text-[10px] text-neutral-400 tracking-widest font-semibold">Categories</p>
+                  </div>
+                )}
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    href={`/categories/${cat.slug}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-3 py-2 rounded hover:bg-neutral-100 text-neutral-700 transition normal-case font-medium text-xs"
+                  >
+                    {cat.name}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-4 border-t border-neutral-200 space-y-3 text-xs">
+              {isStaff && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full bg-amber-400/15 border border-amber-400/40 text-amber-900 px-3 py-2 rounded font-bold uppercase tracking-wider flex items-center justify-center gap-2"
+                >
+                  <ShieldAlert className="w-4 h-4 text-amber-600" /> Staff Control Center
+                </Link>
+              )}
+
+              {user ? (
+                <div className="space-y-2">
+                  <div className="px-1 text-[11px] text-neutral-600">
+                    <p className="font-bold text-neutral-900">{user.full_name}</p>
+                    <p className="font-mono text-neutral-500 truncate">{user.email}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Link
+                      href="/account"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex-1 bg-black text-white text-center py-2 rounded font-bold uppercase tracking-wider"
+                    >
+                      Account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="px-3 py-2 border border-neutral-300 text-red-600 rounded font-semibold hover:bg-red-50"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  href="/account/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full bg-black text-white text-center py-2.5 rounded font-bold uppercase tracking-wider block"
+                >
+                  Sign In / Register
+                </Link>
+              )}
+
+              <div className="flex justify-between items-center text-neutral-600 pt-2 border-t border-neutral-100">
+                <Link
+                  href="/wishlist"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-1.5 hover:text-black font-semibold"
+                >
+                  <Heart className="w-4 h-4" /> Wishlist
+                </Link>
+                <Link
+                  href="/cart"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-1.5 hover:text-black font-semibold"
+                >
+                  <ShoppingBag className="w-4 h-4" /> Bag ({cartCount})
+                </Link>
+              </div>
+            </div>
+          </aside>
         </div>
       )}
     </header>

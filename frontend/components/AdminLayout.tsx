@@ -17,7 +17,9 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  ShieldAlert
+  ShieldAlert,
+  Menu,
+  X
 } from 'lucide-react';
 import { getStoredUser, clearAuthToken, getAuthToken, apiRequest } from '@/lib/api';
 
@@ -40,6 +42,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [checking, setChecking] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -89,8 +96,106 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-neutral-100 flex flex-col md:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-neutral-900 text-neutral-300 flex flex-col justify-between flex-shrink-0">
+      {/* Mobile Top App Bar */}
+      <header className="md:hidden sticky top-0 z-30 bg-neutral-900 border-b border-neutral-800 px-4 py-3 flex items-center justify-between text-white">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-1.5 -ml-1.5 text-neutral-300 hover:text-white focus:outline-none rounded"
+            aria-label="Open administrative navigation drawer"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <Link href="/admin" className="flex items-center gap-2.5">
+            <img
+              src="/images/logo-emblem.png"
+              alt="JWAS Logo"
+              className="w-7 h-7 object-contain rounded-full shadow-xs"
+            />
+            <span className="text-base font-black tracking-widest text-white uppercase">JWAS</span>
+          </Link>
+        </div>
+        <span className="bg-amber-400/10 text-amber-400 border border-amber-400/30 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+          {isSuper ? 'Super Admin' : user.roles?.[0] || 'Staff'}
+        </span>
+      </header>
+
+      {/* Mobile Off-Canvas Sliding Drawer */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity duration-300"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Slide-out drawer panel */}
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[82vw] bg-neutral-950 text-neutral-300 flex flex-col justify-between shadow-2xl z-50 animate-in slide-in-from-left duration-300">
+            <div>
+              <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src="/images/logo-emblem.png"
+                    alt="JWAS Logo"
+                    className="w-8 h-8 object-contain rounded-full shadow-xs"
+                  />
+                  <div>
+                    <span className="text-sm font-black tracking-widest text-white uppercase leading-tight">JWAS</span>
+                    <p className="text-[9px] text-amber-400 font-semibold uppercase tracking-wider">Control Center</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="p-1.5 text-neutral-400 hover:text-white rounded"
+                  aria-label="Close navigation drawer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <nav className="p-3 space-y-1 text-xs max-h-[calc(100vh-180px)] overflow-y-auto">
+                {visibleNav.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between px-3.5 py-2.5 rounded transition ${
+                        isActive
+                          ? 'bg-white text-black font-bold'
+                          : 'text-neutral-300 hover:text-white hover:bg-neutral-800/80 font-medium'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </div>
+                      {isActive && <ChevronRight className="w-3.5 h-3.5" />}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div className="p-4 border-t border-neutral-800 text-xs space-y-3 bg-neutral-950">
+              <div className="text-[11px] text-neutral-300">
+                <p className="font-semibold text-white">{user.full_name}</p>
+                <p className="font-mono text-neutral-400 truncate">{user.email}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 py-1 font-semibold"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop Permanent Sidebar */}
+      <aside className="hidden md:flex md:w-64 bg-neutral-900 text-neutral-300 flex-col justify-between flex-shrink-0">
         <div>
           <div className="p-6 border-b border-neutral-800 flex items-center justify-between">
             <Link href="/admin" className="flex items-center gap-3">
@@ -149,7 +254,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Administrative Viewport */}
-      <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+      <main className="flex-1 p-4 md:p-10 overflow-x-hidden min-w-0">
         {children}
       </main>
     </div>
