@@ -1,4 +1,13 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+function getApiBaseUrl(): string {
+  let raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+  raw = raw.trim().replace(/\/+$/, '');
+  if (!raw.endsWith('/api')) {
+    raw = `${raw}/api`;
+  }
+  return raw;
+}
+
+const API_BASE = getApiBaseUrl();
 
 export function getSessionId(): string {
   if (typeof window === 'undefined') return '';

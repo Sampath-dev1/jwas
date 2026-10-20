@@ -61,6 +61,20 @@ app.add_middleware(
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
+# Automatic Database Bootstrap on Startup
+@app.on_event("startup")
+def bootstrap_database():
+    try:
+        from app.core.database import SessionLocal
+        from cli import init_roles, create_superadmin
+        db = SessionLocal()
+        init_roles(db)
+        db.close()
+        create_superadmin("admin@jwas.com", "Admin@123", "System Superadmin")
+        logger.info("Automatic database bootstrap successful: Superadmin ready.")
+    except Exception as e:
+        logger.warning(f"Startup bootstrap warning (will retry on next request): {e}")
+
 # Root & Health Check
 @app.get("/", tags=["Root"])
 def root():
