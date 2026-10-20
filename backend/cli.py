@@ -40,7 +40,14 @@ def create_superadmin(email, password, name, phone=None):
         init_roles(db)
         existing = db.query(User).filter(User.email == email).first()
         if existing:
-            print(f"Error: User with email '{email}' already exists.")
+            existing.hashed_password = get_password_hash(password)
+            existing.is_active = True
+            existing.is_verified = True
+            super_role = db.query(Role).filter(Role.name == "Super Admin").first()
+            if super_role and super_role not in existing.roles:
+                existing.roles.append(super_role)
+            db.commit()
+            print(f"Super Admin user '{email}' password updated successfully to: {password}")
             return
 
         super_role = db.query(Role).filter(Role.name == "Super Admin").first()

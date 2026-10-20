@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, SlidersHorizontal, Search } from 'lucide-react';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, getAuthToken } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ProductCard';
 
@@ -31,6 +31,13 @@ function ShopContent() {
   }, []);
 
   useEffect(() => {
+    // Gate search feature: must be logged in to search products
+    if (currentSearch && !getAuthToken()) {
+      alert('Please sign in or create an account to search products.');
+      router.push(`/account/login?redirect=${encodeURIComponent(`/shop?search=${encodeURIComponent(currentSearch)}`)}`);
+      return;
+    }
+
     setLoading(true);
     const params = new URLSearchParams();
     if (currentCategory) params.set('category', currentCategory);
@@ -49,6 +56,12 @@ function ShopContent() {
   }, [currentCategory, currentSearch, currentSort, isNewArrival, isBestSeller]);
 
   const updateFilters = (newCat?: string, newSort?: string, newSearch?: string) => {
+    if (newSearch && !getAuthToken()) {
+      alert('Please sign in or create an account to search products.');
+      router.push(`/account/login?redirect=${encodeURIComponent(`/shop?search=${encodeURIComponent(newSearch)}`)}`);
+      return;
+    }
+
     const params = new URLSearchParams(searchParams.toString());
     if (newCat !== undefined) {
       if (newCat) params.set('category', newCat);

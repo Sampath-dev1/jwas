@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, Heart, User, Search, Menu, X, ShieldAlert } from 'lucide-react';
-import { apiRequest, getStoredUser, clearAuthToken } from '@/lib/api';
+import { apiRequest, getStoredUser, clearAuthToken, getAuthToken } from '@/lib/api';
 import { Category, Cart } from '@/types';
 
 export default function Navbar() {
@@ -39,8 +39,21 @@ export default function Navbar() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    if (!user && !getAuthToken()) {
+      alert('Please sign in or create an account to search products.');
+      router.push(`/account/login?redirect=${encodeURIComponent(`/shop?search=${encodeURIComponent(query)}`)}`);
+      return;
+    }
+
+    router.push(`/shop?search=${encodeURIComponent(query)}`);
+  };
+
+  const handleSearchFocus = () => {
+    if (!user && !getAuthToken()) {
+      router.push('/account/login?redirect=/shop');
     }
   };
 
@@ -126,6 +139,7 @@ export default function Navbar() {
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
+                onFocus={handleSearchFocus}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="bg-neutral-50 border border-neutral-200 rounded-full py-1.5 pl-9 pr-4 text-xs focus:outline-none focus:border-black transition w-44 focus:w-60"
               />
@@ -186,6 +200,7 @@ export default function Navbar() {
               type="text"
               placeholder="Search products..."
               value={searchQuery}
+              onFocus={handleSearchFocus}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-neutral-50 border border-neutral-200 rounded-lg py-2 pl-9 pr-4 text-sm"
             />

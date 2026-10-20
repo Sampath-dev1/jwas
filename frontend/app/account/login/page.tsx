@@ -24,6 +24,7 @@ function LoginContent() {
     setLoading(true);
 
     try {
+      let loggedInUser = null;
       if (isRegister) {
         const res = await apiRequest('/auth/register', {
           method: 'POST',
@@ -36,6 +37,7 @@ function LoginContent() {
         });
         setAuthToken(res.access_token);
         setStoredUser(res.user);
+        loggedInUser = res.user;
       } else {
         const res = await apiRequest('/auth/login', {
           method: 'POST',
@@ -43,9 +45,21 @@ function LoginContent() {
         });
         setAuthToken(res.access_token);
         setStoredUser(res.user);
+        loggedInUser = res.user;
       }
 
-      router.push(redirectPath);
+      // Role-based routing:
+      // If administrator logs in -> proceed straight to Admin Control Center (/admin)
+      // If customer logs in -> proceed to destination or catalogue (/shop)
+      const isSuper = loggedInUser?.roles?.includes('Super Admin');
+      const isStaff = isSuper || (loggedInUser?.permissions && loggedInUser.permissions.length > 0);
+
+      if (isStaff) {
+        router.push('/admin');
+      } else {
+        const target = redirectPath && redirectPath !== '/account/login' ? redirectPath : '/shop';
+        router.push(target);
+      }
       router.refresh();
     } catch (err: any) {
       setError(err.message || 'Authentication failed.');
