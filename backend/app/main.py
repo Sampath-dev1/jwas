@@ -1,11 +1,14 @@
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response, FileResponse
+from sqlalchemy.orm import Session
 import os
+import mimetypes
 import logging
 
 from app.core.config import settings
+from app.core.database import get_db
 from app.api import (
     auth,
     categories,
@@ -57,15 +60,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static file serving for uploads
+# Static file serving for uploads with database asset persistence
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
+@app.get("/uploads/{filename}", tags=["Uploads"])
+@app.get("/api/uploads/{filename}", tags=["Uploads"])
+def get_upload_asset(filename: str, db: Session = Depends(get_db)):
+    filepath = os.path.join(settings.UPLOAD_DIR, filename)
+    if os.path.exists(filepath):
+        mime_type, _ = mimetypes.guess_type(filepath)
+        return FileResponse(filepath, media_type=mime_type or "image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+
+    # Fallback to database recovery if container restarted or local disk was ephemeral
+    from app.models.models import UploadedAsset
+    asset = db.query(UploadedAsset).filter(UploadedAsset.filename == filename).first()
+    if asset:
+        try:
+            with open(filepath, "wb") as f:
+                f.write(asset.file_data)
+        except Exception:
+            pass
+        return Response(content=asset.file_data, media_type=asset.content_type, headers={"Cache-Control": "public, max-age=86400"})
+
+    raise HTTPException(status_code=404, detail="Image not found")
+
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # Automatic Database Bootstrap on Startup
 @app.on_event("startup")
 def bootstrap_database():
     try:
-        from app.core.database import SessionLocal
+        from app.core.database import SessionLocal, engine, Base
+        import app.models.models
+        Base.metadata.create_all(bind=engine)
         from cli import init_roles, create_superadmin
         db = SessionLocal()
         init_roles(db)

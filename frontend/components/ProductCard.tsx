@@ -46,10 +46,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           <img
             src={mainImage}
             alt={product.name}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
-            }}
             className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

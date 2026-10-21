@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 import uuid
 from sqlalchemy import (
     Column, String, Integer, Numeric, Boolean, DateTime, ForeignKey, 
-    Text, JSON, Table, Enum, Index
+    Text, JSON, Table, Enum, Index, LargeBinary
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -525,3 +525,12 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     user = relationship("User", back_populates="notifications")
+
+class UploadedAsset(Base):
+    __tablename__ = "uploaded_assets"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    filename = Column(String(255), unique=True, index=True, nullable=False)
+    content_type = Column(String(100), nullable=False)
+    file_data = Column(LargeBinary, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)

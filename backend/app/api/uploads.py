@@ -1,12 +1,18 @@
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request, status
+from sqlalchemy.orm import Session
 import os
 import uuid
 import io
-import re
+import mimetypes
+import logging
 from PIL import Image, ImageOps
 
 from app.core.config import settings
+from app.core.database import get_db
+from app.models.models import UploadedAsset
 from app.permissions.deps import get_current_user_optional
+
+logger = logging.getLogger("jwas.uploads")
 
 router = APIRouter(prefix="/uploads", tags=["Uploads"])
 
@@ -22,7 +28,8 @@ MAX_FILE_SIZE = 25 * 1024 * 1024
 async def upload_image(
     request: Request,
     file: UploadFile = File(...),
-    current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     if not file.filename:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No filename provided.")
@@ -140,6 +147,23 @@ async def upload_image(
             except Exception:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is corrupted or not a valid image.")
 
+    # Persist asset in PostgreSQL database so it survives cloud container restarts and ephemeral disk wipes
+    try:
+        if os.path.exists(filepath):
+            with open(filepath, "rb") as f:
+                saved_data = f.read()
+            mime_type, _ = mimetypes.guess_type(filepath)
+            asset = UploadedAsset(
+                filename=unique_filename,
+                content_type=mime_type or "image/jpeg",
+                file_data=saved_data
+            )
+            db.add(asset)
+            db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to persist asset to PostgreSQL database: {e}")
+        db.rollback()
+
     # Dynamically build base URL so it matches the current server address (localhost, IP, domain, Render, etc.)
     scheme = "http"
     try:
@@ -174,3 +198,21 @@ async def upload_image(
         "filename": unique_filename,
         "size_bytes": os.path.getsize(filepath) if os.path.exists(filepath) else len(content)
     }
+
+@router.get("/{filename}")
+async def get_uploaded_image_route(filename: str, db: Session = Depends(get_db)):
+    filepath = os.path.join(settings.UPLOAD_DIR, filename)
+    if os.path.exists(filepath):
+        mime_type, _ = mimetypes.guess_type(filepath)
+        return FileResponse(filepath, media_type=mime_type or "image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
+
+    asset = db.query(UploadedAsset).filter(UploadedAsset.filename == filename).first()
+    if asset:
+        try:
+            with open(filepath, "wb") as f:
+                f.write(asset.file_data)
+        except Exception:
+            pass
+        return Response(content=asset.file_data, media_type=asset.content_type, headers={"Cache-Control": "public, max-age=86400"})
+
+    raise HTTPException(status_code=404, detail="Image not found")

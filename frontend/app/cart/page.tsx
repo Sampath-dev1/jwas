@@ -131,10 +131,6 @@ export default function CartPage() {
                   <img
                     src={resolveImageUrl(item.image_url)}
                     alt={item.product_name}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
-                    }}
                     className="w-full h-full object-cover"
                   />
                 ) : (

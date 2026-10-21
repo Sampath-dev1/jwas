@@ -68,10 +68,11 @@ export default function AdminProductsPage() {
       const file = files[i];
       try {
         const res = await uploadImage(file);
+        const assetUrl = res.relative_url || (res.url.includes('/uploads/') ? res.url.substring(res.url.indexOf('/uploads/')) : res.url);
         setUploadedImages((prev) => [
           ...prev,
           {
-            url: res.url,
+            url: assetUrl,
             alt_text: file.name.replace(/\.[^/.]+$/, ''),
             is_main: prev.length === 0, // First uploaded image is main
           },
@@ -554,10 +555,6 @@ export default function AdminProductsPage() {
                             src={resolveImageUrl(img.url)}
                             alt=""
                             className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).src =
-                                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
-                            }}
                           />
                           {img.is_main && (
                             <span className="absolute top-1 left-1 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">

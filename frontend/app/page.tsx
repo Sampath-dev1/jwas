@@ -40,10 +40,6 @@ export default function HomePage() {
           <img
             src={resolveImageUrl(cmsData.banners[0].image_url)}
             alt={cmsData.banners[0].title}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1600';
-            }}
             className="absolute inset-0 w-full h-full object-cover opacity-60"
           />
           <div className="relative z-10 text-center max-w-3xl px-4 space-y-6">
@@ -112,10 +108,6 @@ export default function HomePage() {
                   <img
                     src={resolveImageUrl(cat.image_url)}
                     alt={cat.name}
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
-                    }}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (

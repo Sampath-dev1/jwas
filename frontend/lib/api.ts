@@ -89,14 +89,33 @@ export async function apiRequest<T = any>(
 
 /**
  * Resolves any image URL to a fully qualified, displayable URL.
- * Handles relative paths (/uploads/...), full URLs, data URLs, and object URLs.
+ * Handles relative paths (/uploads/...), full localhost URLs, external URLs, and data URLs.
+ * Dynamically re-binds any /uploads/... path to the active backend instance.
  */
 export function resolveImageUrl(url: string | undefined | null): string {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
-    return url;
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+    return trimmed;
   }
-  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+
+  // If the URL contains an uploads path (e.g. /uploads/uuid.jpg or http://localhost:8000/uploads/uuid.jpg),
+  // extract the clean relative path and route to the currently active backend base URL
+  const uploadIndex = trimmed.indexOf('/uploads/');
+  if (uploadIndex !== -1) {
+    const relativePath = trimmed.substring(uploadIndex);
+    const base = API_BASE.replace(/\/api\/?$/, '');
+    return `${base}${relativePath}`;
+  }
+
+  // If it's an external web URL (Cloudinary, S3, Unsplash, etc.)
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  const cleanUrl = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   const base = API_BASE.replace(/\/api\/?$/, '');
   return `${base}${cleanUrl}`;
 }
