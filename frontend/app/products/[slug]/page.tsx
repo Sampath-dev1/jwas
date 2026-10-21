@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Heart, ShoppingBag, ShieldCheck, Check, Truck, AlertCircle } from 'lucide-react';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { apiRequest, getAuthToken, resolveImageUrl } from '@/lib/api';
 import { Product, ProductVariant } from '@/types';
 
 function ProductDetailContent() {
@@ -118,8 +118,12 @@ function ProductDetailContent() {
           <div className="aspect-[3/4] w-full overflow-hidden bg-neutral-100 rounded-sm">
             {selectedImage ? (
               <img
-                src={selectedImage}
+                src={resolveImageUrl(selectedImage)}
                 alt={product.name}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+                }}
                 className="w-full h-full object-cover object-center"
               />
             ) : (
@@ -136,10 +140,18 @@ function ProductDetailContent() {
                   key={img.id}
                   onClick={() => setSelectedImage(img.image_url)}
                   className={`relative w-20 aspect-square overflow-hidden rounded-sm border-2 transition ${
-                    selectedImage === img.image_url ? 'border-black' : 'border-transparent'
+                    selectedImage === img.image_url ? 'border-black' : 'border-neutral-900'
                   }`}
                 >
-                  <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                  <img
+                    src={resolveImageUrl(img.image_url)}
+                    alt=""
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>

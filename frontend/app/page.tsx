@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Sparkles, Truck } from 'lucide-react';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, resolveImageUrl } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ProductCard';
 
@@ -38,8 +38,12 @@ export default function HomePage() {
       {cmsData.banners && cmsData.banners.length > 0 ? (
         <div className="relative bg-neutral-900 text-white min-h-[550px] flex items-center justify-center overflow-hidden">
           <img
-            src={cmsData.banners[0].image_url}
+            src={resolveImageUrl(cmsData.banners[0].image_url)}
             alt={cmsData.banners[0].title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1600';
+            }}
             className="absolute inset-0 w-full h-full object-cover opacity-60"
           />
           <div className="relative z-10 text-center max-w-3xl px-4 space-y-6">
@@ -106,8 +110,12 @@ export default function HomePage() {
               >
                 {cat.image_url ? (
                   <img
-                    src={cat.image_url}
+                    src={resolveImageUrl(cat.image_url)}
                     alt={cat.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+                    }}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 ) : (

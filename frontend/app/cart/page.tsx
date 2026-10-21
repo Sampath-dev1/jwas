@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, resolveImageUrl } from '@/lib/api';
 import { Cart } from '@/types';
 
 export default function CartPage() {
@@ -128,7 +128,15 @@ export default function CartPage() {
               {/* Thumbnail */}
               <div className="w-24 h-32 flex-shrink-0 bg-neutral-100 rounded-sm overflow-hidden">
                 {item.image_url ? (
-                  <img src={item.image_url} alt={item.product_name} className="w-full h-full object-cover" />
+                  <img
+                    src={resolveImageUrl(item.image_url)}
+                    alt={item.product_name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src =
+                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+                    }}
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-400 uppercase">
                     JWAS

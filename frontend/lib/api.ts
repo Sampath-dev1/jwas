@@ -87,7 +87,21 @@ export async function apiRequest<T = any>(
   return text ? JSON.parse(text) : (null as any);
 }
 
-export async function uploadImage(file: File): Promise<{ url: string; filename: string; size_bytes: number }> {
+/**
+ * Resolves any image URL to a fully qualified, displayable URL.
+ * Handles relative paths (/uploads/...), full URLs, data URLs, and object URLs.
+ */
+export function resolveImageUrl(url: string | undefined | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  const base = API_BASE.replace(/\/api\/?$/, '');
+  return `${base}${cleanUrl}`;
+}
+
+export async function uploadImage(file: File): Promise<{ url: string; relative_url?: string; filename: string; size_bytes: number }> {
   const token = getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
@@ -97,11 +111,16 @@ export async function uploadImage(file: File): Promise<{ url: string; filename: 
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}/uploads/image`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE}/uploads/image`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  } catch (netErr: any) {
+    throw new Error(`Upload server unreachable at ${API_BASE}. Please ensure backend is running.`);
+  }
 
   if (!res.ok) {
     let err = 'Image upload failed';
@@ -111,8 +130,14 @@ export async function uploadImage(file: File): Promise<{ url: string; filename: 
     } catch {
       err = await res.text();
     }
-    throw new Error(err);
+    throw new Error(err || `HTTP ${res.status}: Upload failed`);
   }
 
-  return await res.json();
+  const data = await res.json();
+  // Ensure url is fully resolved and reachable
+  const resolvedUrl = data.relative_url ? resolveImageUrl(data.relative_url) : (data.url || '');
+  return {
+    ...data,
+    url: resolvedUrl,
+  };
 }

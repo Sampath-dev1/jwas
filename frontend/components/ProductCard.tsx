@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { Product } from '@/types';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { apiRequest, getAuthToken, resolveImageUrl } from '@/lib/api';
 
 interface ProductCardProps {
   product: Product;
@@ -14,7 +14,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [inWishlist, setInWishlist] = useState(false);
   const [loadingWishlist, setLoadingWishlist] = useState(false);
 
-  const mainImage = product.images.find((img) => img.is_main)?.image_url || product.images[0]?.image_url;
+  const rawMainImage = product.images.find((img) => img.is_main)?.image_url || product.images[0]?.image_url;
+  const mainImage = rawMainImage ? resolveImageUrl(rawMainImage) : '';
   
   // Compute total available stock across variants
   const totalStock = product.variants.reduce((acc, v) => acc + (v.available_stock || 0), 0);
@@ -45,6 +46,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <img
             src={mainImage}
             alt={product.name}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+            }}
             className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
           />
         ) : (

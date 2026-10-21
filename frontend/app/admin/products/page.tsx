@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Archive, Trash2, Upload, Image as ImageIcon, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Archive, Trash2, Upload, Image as ImageIcon, X, CheckCircle2, AlertCircle, Link as LinkIcon, Loader2 } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
-import { apiRequest, uploadImage } from '@/lib/api';
+import { apiRequest, uploadImage, resolveImageUrl } from '@/lib/api';
 import { Product, Category } from '@/types';
 
 export default function AdminProductsPage() {
@@ -28,6 +28,8 @@ export default function AdminProductsPage() {
   const [uploadedImages, setUploadedImages] = useState<{ url: string; alt_text?: string; is_main?: boolean }[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [manualImageUrl, setManualImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = () => {
@@ -53,34 +55,80 @@ export default function AdminProductsPage() {
     loadData();
   }, []);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = async (fileList: FileList | File[]) => {
+    if (!fileList || fileList.length === 0) return;
 
     setUploadingImage(true);
     setUploadError(null);
 
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+    const files = Array.from(fileList);
+    const errors: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
         const res = await uploadImage(file);
         setUploadedImages((prev) => [
           ...prev,
           {
             url: res.url,
-            alt_text: file.name.split('.')[0],
+            alt_text: file.name.replace(/\.[^/.]+$/, ''),
             is_main: prev.length === 0, // First uploaded image is main
           },
         ]);
-      }
-    } catch (err: any) {
-      setUploadError(err.message || 'Image upload failed. Supported formats: JPG, PNG, WEBP (Max 5MB).');
-    } finally {
-      setUploadingImage(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      } catch (err: any) {
+        errors.push(`${file.name}: ${err.message || 'Upload failed'}`);
       }
     }
+
+    if (errors.length > 0) {
+      setUploadError(errors.join(' | '));
+    }
+    setUploadingImage(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      await processFiles(e.target.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      await processFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleAddManualImage = () => {
+    const trimmed = manualImageUrl.trim();
+    if (!trimmed) return;
+    setUploadedImages((prev) => [
+      ...prev,
+      {
+        url: trimmed,
+        alt_text: name || 'Product Image',
+        is_main: prev.length === 0,
+      },
+    ]);
+    setManualImageUrl('');
   };
 
   const handleRemoveUploadedImage = (indexToRemove: number) => {
@@ -403,41 +451,92 @@ export default function AdminProductsPage() {
                 </div>
 
                 {/* Upload Image from Device Gallery */}
-                <div className="space-y-2 pt-1 border-t border-neutral-200">
+                <div className="space-y-3 pt-2 border-t border-neutral-200">
                   <div className="flex justify-between items-baseline">
-                    <label className="block font-bold uppercase text-neutral-900">
-                      Product Images (Upload from Device) *
+                    <label className="block font-bold uppercase text-neutral-900 text-xs">
+                      Product Images (Upload from Laptop or Enter URL) *
                     </label>
-                    <span className="text-[11px] text-neutral-500 font-medium">PNG, JPG, WEBP (Max 5MB)</span>
+                    <span className="text-[11px] text-neutral-500 font-medium">PNG, JPG, WEBP, JFIF (Max 25MB)</span>
                   </div>
 
-                  {/* Drag & Drop / File Browser Button */}
+                  {/* Drag & Drop / File Browser Label Container */}
                   <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-neutral-300 rounded-lg p-5 text-center cursor-pointer hover:border-black hover:bg-neutral-50 transition flex flex-col items-center justify-center space-y-2"
+                    onDragOver={handleDragOver}
+                    onDragEnter={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`relative border-2 border-dashed rounded-lg p-5 text-center transition flex flex-col items-center justify-center space-y-2 ${
+                      isDragging
+                        ? 'border-black bg-neutral-100 ring-2 ring-black/10'
+                        : 'border-neutral-300 hover:border-black hover:bg-neutral-50'
+                    }`}
                   >
                     <input
+                      id="product-image-file-input"
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileUpload}
                       multiple
-                      accept="image/png, image/jpeg, image/webp"
-                      className="hidden"
+                      accept="image/*,.png,.jpg,.jpeg,.webp,.jfif,.gif,.bmp,.avif"
+                      className="sr-only"
                     />
-                    <div className="p-3 bg-neutral-100 rounded-full text-black">
-                      <Upload className="w-5 h-5 text-black" />
+                    <label
+                      htmlFor="product-image-file-input"
+                      className="w-full h-full flex flex-col items-center justify-center cursor-pointer space-y-2 select-none"
+                    >
+                      <div className="p-3 bg-neutral-100 rounded-full text-black shadow-xs">
+                        {uploadingImage ? (
+                          <Loader2 className="w-5 h-5 text-black animate-spin" />
+                        ) : (
+                          <Upload className="w-5 h-5 text-black" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-xs text-neutral-900">
+                          {uploadingImage
+                            ? 'Uploading and optimizing image from laptop...'
+                            : isDragging
+                            ? 'Drop laptop image(s) here'
+                            : 'Click to Browse Laptop Files or Drag & Drop'}
+                        </p>
+                        <p className="text-[11px] text-neutral-500 mt-0.5">
+                          Select JPG, PNG, WEBP, JFIF photos from your laptop
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Alternative: Add Image via Direct Web URL */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="url"
+                        value={manualImageUrl}
+                        onChange={(e) => setManualImageUrl(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddManualImage();
+                          }
+                        }}
+                        placeholder="Or paste external image URL (e.g. https://...)"
+                        className="w-full border border-neutral-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-black text-neutral-900"
+                      />
                     </div>
-                    <div>
-                      <p className="font-bold text-xs text-neutral-900">
-                        {uploadingImage ? 'Uploading image...' : 'Click to Browse Device Gallery'}
-                      </p>
-                      <p className="text-[11px] text-neutral-500 mt-0.5">Select image(s) from your computer</p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddManualImage}
+                      disabled={!manualImageUrl.trim()}
+                      className="px-3 py-1.5 bg-neutral-100 border border-neutral-300 rounded text-xs font-bold uppercase tracking-wider text-neutral-800 hover:bg-neutral-200 disabled:opacity-50 transition"
+                    >
+                      Add URL
+                    </button>
                   </div>
 
                   {uploadError && (
                     <div className="p-2.5 bg-red-50 text-red-800 border border-red-200 rounded text-xs font-semibold flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 text-red-800" /> {uploadError}
+                      <AlertCircle className="w-4 h-4 text-red-800 shrink-0" />
+                      <span className="flex-1">{uploadError}</span>
                     </div>
                   )}
 
@@ -451,7 +550,15 @@ export default function AdminProductsPage() {
                             img.is_main ? 'border-black' : 'border-neutral-200'
                           }`}
                         >
-                          <img src={img.url} alt="" className="w-full h-full object-cover" />
+                          <img
+                            src={resolveImageUrl(img.url)}
+                            alt=""
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=600';
+                            }}
+                          />
                           {img.is_main && (
                             <span className="absolute top-1 left-1 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
                               Main
