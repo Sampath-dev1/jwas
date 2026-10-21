@@ -157,6 +157,8 @@ class ProductUpdate(BaseModel):
     seo_description: Optional[str] = None
     category_id: Optional[str] = None
     subcategory_id: Optional[str] = None
+    images: Optional[List[ProductImageCreate]] = None
+    variants: Optional[List[ProductVariantCreate]] = None
 
 class ProductOut(BaseModel):
     id: str

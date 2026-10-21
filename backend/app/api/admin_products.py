@@ -158,8 +158,22 @@ def update_product(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found.")
 
     update_data = prod_in.model_dump(exclude_unset=True)
+    images_in = update_data.pop("images", None)
+    variants_in = update_data.pop("variants", None)
+
     for field, value in update_data.items():
         setattr(product, field, value)
+
+    if images_in is not None:
+        db.query(ProductImage).filter(ProductImage.product_id == product.id).delete()
+        for idx, img_dict in enumerate(images_in):
+            db.add(ProductImage(
+                product_id=product.id,
+                image_url=img_dict.get("image_url", ""),
+                alt_text=img_dict.get("alt_text", product.name),
+                display_order=img_dict.get("display_order", idx),
+                is_main=img_dict.get("is_main", idx == 0)
+            ))
 
     db.commit()
     db.refresh(product)

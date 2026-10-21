@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, FolderTree, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, FolderTree, Eye, EyeOff, Pencil } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
 import { apiRequest } from '@/lib/api';
 import { Category } from '@/types';
@@ -10,6 +10,7 @@ export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentId, setParentId] = useState('');
@@ -29,24 +30,53 @@ export default function AdminCategoriesPage() {
     loadCategories();
   }, []);
 
-  const handleCreateCategory = async (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setEditingCategory(null);
+    setName('');
+    setDescription('');
+    setParentId('');
+    setIsPublished(true);
+    setIsNavVisible(true);
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (cat: Category) => {
+    setEditingCategory(cat);
+    setName(cat.name);
+    setDescription(cat.description || '');
+    setParentId(cat.parent_id || '');
+    setIsPublished(cat.is_published);
+    setIsNavVisible(cat.is_nav_visible);
+    setShowModal(true);
+  };
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await apiRequest('/admin/categories', {
-        method: 'POST',
-        body: JSON.stringify({
-          name,
-          description,
-          parent_id: parentId || null,
-          is_published: isPublished,
-          is_nav_visible: isNavVisible,
-        }),
-      });
+      const payload = {
+        name,
+        description,
+        parent_id: parentId || null,
+        is_published: isPublished,
+        is_nav_visible: isNavVisible,
+      };
+
+      if (editingCategory) {
+        await apiRequest(`/admin/categories/${editingCategory.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        alert('Category updated successfully!');
+      } else {
+        await apiRequest('/admin/categories', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        alert('Category created successfully!');
+      }
       setShowModal(false);
-      setName('');
-      setDescription('');
-      setParentId('');
+      setEditingCategory(null);
       loadCategories();
     } catch (err: any) {
       alert(err.message);
@@ -79,7 +109,7 @@ export default function AdminCategoriesPage() {
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenCreate}
             className="inline-flex items-center gap-2 bg-black text-white active:text-white px-4 py-2 text-xs font-bold uppercase tracking-wider rounded shadow hover:bg-neutral-800 active:bg-neutral-950 transition"
           >
             <Plus className="w-4 h-4 text-white" /> Add Category
@@ -111,11 +141,18 @@ export default function AdminCategoriesPage() {
                         {cat.is_published ? 'Published' : 'Draft'}
                       </span>
                       <button
+                        onClick={() => handleOpenEdit(cat)}
+                        className="text-neutral-600 hover:text-black p-1"
+                        title="Edit Category"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
                         onClick={() => handleDelete(cat.id)}
-                        className="text-neutral-400 hover:text-red-600"
+                        className="text-neutral-400 hover:text-red-600 p-1"
                         title="Delete Category"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
@@ -154,11 +191,13 @@ export default function AdminCategoriesPage() {
           <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4 text-xs text-neutral-900 shadow-xl border border-neutral-200">
               <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900">Add New Category</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900">
+                  {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Add New Category'}
+                </h3>
                 <button onClick={() => setShowModal(false)} className="text-neutral-500 hover:text-black font-bold">✕</button>
               </div>
 
-              <form onSubmit={handleCreateCategory} className="space-y-4">
+              <form onSubmit={handleSaveCategory} className="space-y-4">
                 <div>
                   <label className="block font-bold uppercase text-neutral-900 mb-1 tracking-wider text-[11px]">Category Name *</label>
                   <input
@@ -230,7 +269,7 @@ export default function AdminCategoriesPage() {
                     disabled={submitting}
                     className="bg-black text-white active:text-white px-5 py-2 font-bold uppercase tracking-wider rounded hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-400 transition"
                   >
-                    {submitting ? 'Creating...' : 'Save Category'}
+                    {submitting ? 'Saving...' : editingCategory ? 'Save Changes' : 'Save Category'}
                   </button>
                 </div>
               </form>

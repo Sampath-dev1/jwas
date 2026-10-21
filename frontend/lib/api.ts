@@ -19,33 +19,125 @@ export function getSessionId(): string {
   return sid;
 }
 
-export function getAuthToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('jwas_auth_token');
+export function isStaffOrAdmin(user: any): boolean {
+  if (!user) return false;
+  return Boolean(
+    user.roles?.includes('Super Admin') ||
+    user.roles?.includes('Admin') ||
+    user.roles?.includes('Catalogue Manager') ||
+    user.roles?.includes('Inventory Manager') ||
+    user.roles?.includes('Order Manager') ||
+    (user.permissions && user.permissions.length > 0)
+  );
 }
 
-export function setAuthToken(token: string) {
+export function getAdminAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return (
+    localStorage.getItem('jwas_admin_auth_token') ||
+    localStorage.getItem('jwas_auth_token')
+  );
+}
+
+export function setAdminAuthToken(token: string, user?: any) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('jwas_admin_auth_token', token);
+    localStorage.setItem('jwas_auth_token', token);
+    if (user) {
+      localStorage.setItem('jwas_admin_user', JSON.stringify(user));
+      localStorage.setItem('jwas_user', JSON.stringify(user));
+    }
+  }
+}
+
+export function clearAdminAuthToken() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('jwas_admin_auth_token');
+    localStorage.removeItem('jwas_admin_user');
+  }
+}
+
+export function getAdminUser() {
+  if (typeof window === 'undefined') return null;
+  const adminUser = localStorage.getItem('jwas_admin_user');
+  if (adminUser) {
+    try {
+      return JSON.parse(adminUser);
+    } catch {}
+  }
+  return null;
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  // If active on an /admin URL, always route through the persistent admin token
+  if (window.location.pathname.startsWith('/admin')) {
+    return getAdminAuthToken();
+  }
+  return (
+    localStorage.getItem('jwas_customer_auth_token') ||
+    localStorage.getItem('jwas_auth_token') ||
+    localStorage.getItem('jwas_admin_auth_token')
+  );
+}
+
+export function setAuthToken(token: string, user?: any) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('jwas_auth_token', token);
+    if (isStaffOrAdmin(user)) {
+      localStorage.setItem('jwas_admin_auth_token', token);
+      if (user) localStorage.setItem('jwas_admin_user', JSON.stringify(user));
+    } else {
+      localStorage.setItem('jwas_customer_auth_token', token);
+      if (user) localStorage.setItem('jwas_customer_user', JSON.stringify(user));
+    }
   }
 }
 
 export function clearAuthToken() {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('jwas_auth_token');
-    localStorage.removeItem('jwas_user');
+    if (window.location.pathname.startsWith('/admin')) {
+      clearAdminAuthToken();
+      localStorage.removeItem('jwas_auth_token');
+      localStorage.removeItem('jwas_user');
+    } else {
+      // Customer tab logout: preserves admin tab session so admin edits are never interrupted
+      localStorage.removeItem('jwas_customer_auth_token');
+      localStorage.removeItem('jwas_customer_user');
+      localStorage.removeItem('jwas_auth_token');
+      localStorage.removeItem('jwas_user');
+    }
   }
 }
 
 export function getStoredUser() {
   if (typeof window === 'undefined') return null;
+  if (window.location.pathname.startsWith('/admin')) {
+    return getAdminUser() || (localStorage.getItem('jwas_user') ? JSON.parse(localStorage.getItem('jwas_user')!) : null);
+  }
+  const custUser = localStorage.getItem('jwas_customer_user');
+  if (custUser) {
+    try {
+      return JSON.parse(custUser);
+    } catch {}
+  }
   const user = localStorage.getItem('jwas_user');
-  return user ? JSON.parse(user) : null;
+  if (user) {
+    try {
+      return JSON.parse(user);
+    } catch {}
+  }
+  return getAdminUser();
 }
 
 export function setStoredUser(user: any) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('jwas_user', JSON.stringify(user));
+    if (isStaffOrAdmin(user)) {
+      localStorage.setItem('jwas_admin_user', JSON.stringify(user));
+    } else {
+      localStorage.setItem('jwas_customer_user', JSON.stringify(user));
+    }
   }
 }
 
@@ -53,7 +145,12 @@ export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = getAuthToken();
+  // Always use the dedicated admin token for any /admin endpoint or when inside /admin route
+  const isAdminRequest =
+    endpoint.startsWith('/admin') ||
+    (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin'));
+
+  const token = isAdminRequest ? getAdminAuthToken() : getAuthToken();
   const sessionId = getSessionId();
 
   const headers: Record<string, string> = {
@@ -121,7 +218,7 @@ export function resolveImageUrl(url: string | undefined | null): string {
 }
 
 export async function uploadImage(file: File): Promise<{ url: string; relative_url?: string; filename: string; size_bytes: number }> {
-  const token = getAuthToken();
+  const token = getAdminAuthToken() || getAuthToken();
   const formData = new FormData();
   formData.append('file', file);
 

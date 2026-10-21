@@ -3,7 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { apiRequest, setAuthToken, setStoredUser } from '@/lib/api';
+import { apiRequest, setAuthToken, setStoredUser, setAdminAuthToken } from '@/lib/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -25,6 +25,7 @@ function LoginContent() {
 
     try {
       let loggedInUser = null;
+      let accessToken = '';
       if (isRegister) {
         const res = await apiRequest('/auth/register', {
           method: 'POST',
@@ -35,26 +36,29 @@ function LoginContent() {
             phone: phone || null,
           }),
         });
-        setAuthToken(res.access_token);
-        setStoredUser(res.user);
         loggedInUser = res.user;
+        accessToken = res.access_token;
+        setAuthToken(res.access_token, res.user);
+        setStoredUser(res.user);
       } else {
         const res = await apiRequest('/auth/login', {
           method: 'POST',
           body: JSON.stringify({ email, password }),
         });
-        setAuthToken(res.access_token);
-        setStoredUser(res.user);
         loggedInUser = res.user;
+        accessToken = res.access_token;
+        setAuthToken(res.access_token, res.user);
+        setStoredUser(res.user);
       }
 
-      // Role-based routing:
+      // Role-based routing and session persistence:
       // If administrator logs in -> proceed straight to Admin Control Center (/admin)
       // If customer logs in -> proceed to destination or catalogue (/shop)
       const isSuper = loggedInUser?.roles?.includes('Super Admin');
       const isStaff = isSuper || (loggedInUser?.permissions && loggedInUser.permissions.length > 0);
 
       if (isStaff) {
+        setAdminAuthToken(accessToken, loggedInUser);
         router.push('/admin');
       } else {
         const target = redirectPath && redirectPath !== '/account/login' ? redirectPath : '/shop';

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Download, BarChart3, Calendar, FileSpreadsheet } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { apiRequest, getAdminAuthToken } from '@/lib/api';
 
 export default function AdminReportsPage() {
   const [summary, setSummary] = useState<any>(null);
@@ -28,7 +28,7 @@ export default function AdminReportsPage() {
   }, []);
 
   const handleExportCSV = () => {
-    const token = getAuthToken();
+    const token = getAdminAuthToken();
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
     fetch(`${apiUrl}/admin/reports/export-orders-csv`, {
       headers: { Authorization: `Bearer ${token}` },

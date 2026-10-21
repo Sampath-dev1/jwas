@@ -80,21 +80,23 @@ export default function Navbar() {
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-100 transition-all">
-        {/* Top utility banner */}
-      <div className="bg-neutral-900 text-neutral-300 text-xs py-1.5 px-4 text-center tracking-widest uppercase font-medium flex justify-between items-center max-w-7xl mx-auto">
-        <span>JWAS COUTURE & ESSENTIALS</span>
-        <div className="flex gap-4 items-center">
-          {isStaff && (
-            <Link
-              href="/admin"
-              className="text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold"
-            >
-              <ShieldAlert className="w-3.5 h-3.5" /> Staff Dashboard
-            </Link>
-          )}
-          <span>AUTHENTIC DYNAMIC COMMERCE</span>
-        </div>
-      </div>
+        {/* Top utility banner: Only visible when user is logged in */}
+        {user && (
+          <div className="bg-neutral-900 text-neutral-300 text-xs py-1.5 px-4 text-center tracking-widest uppercase font-medium flex justify-between items-center max-w-7xl mx-auto">
+            <span>JWAS COUTURE & ESSENTIALS</span>
+            <div className="flex gap-4 items-center">
+              {isStaff && (
+                <Link
+                  href="/admin"
+                  className="text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" /> Staff Dashboard
+                </Link>
+              )}
+              <span>AUTHENTIC DYNAMIC COMMERCE</span>
+            </div>
+          </div>
+        )}
 
       {/* Main navigation container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

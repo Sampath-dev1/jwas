@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Archive, Trash2, Upload, Image as ImageIcon, X, CheckCircle2, AlertCircle, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { Plus, Archive, Trash2, Upload, Image as ImageIcon, X, CheckCircle2, AlertCircle, Link as LinkIcon, Loader2, Pencil } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
 import { apiRequest, uploadImage, resolveImageUrl } from '@/lib/api';
 import { Product, Category } from '@/types';
@@ -11,6 +11,7 @@ export default function AdminProductsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // New product form state
@@ -151,7 +152,51 @@ export default function AdminProductsPage() {
     );
   };
 
-  const handleCreateProduct = async (e: React.FormEvent) => {
+  const handleOpenCreate = () => {
+    setEditingProduct(null);
+    setName('');
+    setSku('');
+    setDescription('');
+    setSellingPrice('');
+    setOriginalPrice('');
+    setCategoryId(categories.length > 0 ? categories[0].id : '');
+    setStatus('published');
+    setVariantSize('Standard');
+    setInitialStock('10');
+    setUploadedImages([]);
+    setUploadError(null);
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (product: Product) => {
+    setEditingProduct(product);
+    setName(product.name);
+    setSku(product.sku);
+    setDescription(product.description || '');
+    setSellingPrice(product.selling_price ? product.selling_price.toString() : '');
+    setOriginalPrice(product.original_price ? product.original_price.toString() : '');
+    setCategoryId(product.category_id || (categories.length > 0 ? categories[0].id : ''));
+    setStatus((product.status as 'draft' | 'published') || 'published');
+    if (product.variants && product.variants.length > 0) {
+      setVariantSize(product.variants[0].attributes?.size || product.variants[0].attributes?.standard || 'Standard');
+      const stock = product.variants[0].available_stock ?? product.variants[0].current_stock ?? 0;
+      setInitialStock(stock.toString());
+    } else {
+      setVariantSize('Standard');
+      setInitialStock('10');
+    }
+    setUploadedImages(
+      (product.images || []).map((img, idx) => ({
+        url: img.image_url,
+        alt_text: img.alt_text || product.name,
+        is_main: img.is_main || idx === 0,
+      }))
+    );
+    setUploadError(null);
+    setShowModal(true);
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryId) {
       alert('Please select a category for this product.');
@@ -168,14 +213,6 @@ export default function AdminProductsPage() {
         original_price: originalPrice ? parseFloat(originalPrice) : null,
         status,
         category_id: categoryId,
-        variants: [
-          {
-            sku: `${sku}-01`,
-            attributes: { size: variantSize },
-            selling_price: parseFloat(sellingPrice),
-            initial_stock: parseInt(initialStock, 10) || 0,
-          },
-        ],
         images: uploadedImages.map((img, idx) => ({
           image_url: img.url,
           alt_text: img.alt_text || name,
@@ -184,21 +221,33 @@ export default function AdminProductsPage() {
         })),
       };
 
-      await apiRequest('/admin/products', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      if (editingProduct) {
+        await apiRequest(`/admin/products/${editingProduct.id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+        alert('Product details updated successfully!');
+      } else {
+        payload.variants = [
+          {
+            sku: `${sku}-01`,
+            attributes: { size: variantSize },
+            selling_price: parseFloat(sellingPrice),
+            initial_stock: parseInt(initialStock, 10) || 0,
+          },
+        ];
+        await apiRequest('/admin/products', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        alert('New product created successfully!');
+      }
 
       setShowModal(false);
-      setName('');
-      setSku('');
-      setDescription('');
-      setSellingPrice('');
-      setOriginalPrice('');
-      setUploadedImages([]);
+      setEditingProduct(null);
       loadData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create product.');
+      alert(err.message || 'Failed to save product.');
     } finally {
       setSubmitting(false);
     }
@@ -243,7 +292,7 @@ export default function AdminProductsPage() {
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenCreate}
             className="inline-flex items-center gap-2 bg-black text-white active:text-white px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded shadow hover:bg-neutral-800 active:bg-neutral-950 transition"
           >
             <Plus className="w-4 h-4 text-white" /> Add Product
@@ -316,6 +365,13 @@ export default function AdminProductsPage() {
                         </td>
                         <td className="py-3 px-4 text-right space-x-2">
                           <button
+                            onClick={() => handleOpenEdit(p)}
+                            className="px-3 py-1.5 text-xs font-bold uppercase rounded bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 transition inline-flex items-center gap-1.5 shadow-2xs"
+                            title="Edit Product Details & Images"
+                          >
+                            <Pencil className="w-3.5 h-3.5 text-black" /> Edit
+                          </button>
+                          <button
                             onClick={() => handleDeleteProduct(p)}
                             className="px-3 py-1.5 text-xs font-bold uppercase rounded bg-red-100 hover:bg-red-200 text-red-800 active:bg-red-300 transition inline-flex items-center gap-1.5 shadow-2xs"
                             title="Permanently Delete Product"
@@ -341,7 +397,9 @@ export default function AdminProductsPage() {
           <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
             <div className="bg-white rounded-lg max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto text-xs text-neutral-900 shadow-xl border border-neutral-200">
               <div className="flex justify-between items-center border-b border-neutral-200 pb-3">
-                <h3 className="text-base font-bold uppercase tracking-wider text-black">Create New Product</h3>
+                <h3 className="text-base font-bold uppercase tracking-wider text-black">
+                  {editingProduct ? `Edit Product: ${editingProduct.name}` : 'Create New Product'}
+                </h3>
                 <button
                   onClick={() => setShowModal(false)}
                   className="p-1 text-neutral-700 hover:text-black font-bold text-sm"
@@ -350,7 +408,7 @@ export default function AdminProductsPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateProduct} className="space-y-4">
+              <form onSubmit={handleSaveProduct} className="space-y-4">
                 <div>
                   <label className="block font-bold uppercase text-neutral-800 mb-1">Product Name *</label>
                   <input
@@ -611,7 +669,7 @@ export default function AdminProductsPage() {
                     disabled={submitting}
                     className="bg-black text-white active:text-white px-6 py-2.5 font-bold uppercase tracking-wider rounded shadow hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-400 transition"
                   >
-                    {submitting ? 'Saving...' : 'Save & Publish Product'}
+                    {submitting ? 'Saving...' : editingProduct ? 'Save Changes' : 'Save & Publish Product'}
                   </button>
                 </div>
               </form>

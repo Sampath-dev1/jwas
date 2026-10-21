@@ -21,7 +21,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { getStoredUser, clearAuthToken, getAuthToken, apiRequest } from '@/lib/api';
+import { getStoredUser, clearAdminAuthToken, getAdminAuthToken, apiRequest } from '@/lib/api';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, perm: 'reports.read' },
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [mobileMenuOpen]);
 
   useEffect(() => {
-    const token = getAuthToken();
+    const token = getAdminAuthToken();
     if (!token) {
       router.push('/account/login?redirect=' + pathname);
       return;
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [pathname, router]);
 
   const handleLogout = () => {
-    clearAuthToken();
+    clearAdminAuthToken();
     router.push('/account/login');
   };
 
