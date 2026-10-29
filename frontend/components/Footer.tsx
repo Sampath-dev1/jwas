@@ -2,8 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on login page
+  if (pathname === '/account/login') {
+    return null;
+  }
   return (
     <footer className="bg-neutral-950 text-neutral-400 text-sm border-t border-neutral-900 mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -22,7 +29,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-xs">
-              Journey with a style. Contemporary tailoring and luxury essentials engineered with uncompromising precision.
+              Journey with style. Contemporary tailoring and luxury essentials engineered with uncompromising precision.
             </p>
           </div>
 

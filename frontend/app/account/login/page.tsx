@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { apiRequest, setAuthToken, setStoredUser, setAdminAuthToken } from '@/lib/api';
+import { apiRequest, setAuthToken, setStoredUser, setAdminAuthToken, getAuthToken } from '@/lib/api';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '/account';
 
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -17,6 +16,13 @@ function LoginContent() {
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // If already authenticated, redirect straight to home
+    if (getAuthToken()) {
+      router.replace('/');
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +36,10 @@ function LoginContent() {
         const res = await apiRequest('/auth/register', {
           method: 'POST',
           body: JSON.stringify({
-            email,
+            email: email.trim(),
             password,
-            full_name: fullName,
-            phone: phone || null,
+            full_name: fullName.trim(),
+            phone: phone ? phone.trim() : null,
           }),
         });
         loggedInUser = res.user;
@@ -43,7 +49,7 @@ function LoginContent() {
       } else {
         const res = await apiRequest('/auth/login', {
           method: 'POST',
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ email: email.trim(), password }),
         });
         loggedInUser = res.user;
         accessToken = res.access_token;
@@ -51,20 +57,21 @@ function LoginContent() {
         setStoredUser(res.user);
       }
 
-      // Role-based routing and session persistence:
-      // If administrator logs in -> proceed straight to Admin Control Center (/admin)
-      // If customer logs in -> proceed to destination or catalogue (/shop)
+      // Role persistence
       const isSuper = loggedInUser?.roles?.includes('Super Admin');
       const isStaff = isSuper || (loggedInUser?.permissions && loggedInUser.permissions.length > 0);
 
       if (isStaff) {
         setAdminAuthToken(accessToken, loggedInUser);
-        router.push('/admin');
-      } else {
-        const target = redirectPath && redirectPath !== '/account/login' ? redirectPath : '/shop';
-        router.push(target);
       }
-      router.refresh();
+
+      // User requirement: After logging in they should be redirected to home
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-change'));
+        window.location.href = '/';
+      } else {
+        router.push('/');
+      }
     } catch (err: any) {
       setError(err.message || 'Authentication failed.');
     } finally {
@@ -73,24 +80,25 @@ function LoginContent() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-4 py-16">
-      <div className="text-center mb-8 flex flex-col items-center">
-        <Link href="/" className="mb-4 group">
-          <img
-            src="/images/logo-emblem.png"
-            alt="JWAS Logo"
-            className="w-16 h-16 object-contain rounded-full shadow-sm group-hover:scale-105 transition-transform"
-          />
-        </Link>
-        <h1 className="text-3xl font-bold uppercase tracking-tight text-neutral-900">
-          {isRegister ? 'Create Account' : 'Sign In'}
-        </h1>
-        <p className="text-xs text-neutral-600 uppercase tracking-wider mt-1">
-          {isRegister
-            ? 'Join JWAS for persistent order tracking and bespoke service'
-            : 'Access your order history and private settings'}
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4 py-12">
+      <div className="max-w-md w-full bg-white p-8 sm:p-10 rounded-2xl shadow-xl border border-neutral-100">
+        <div className="text-center mb-8 flex flex-col items-center">
+          <Link href="/" className="mb-4 group">
+            <img
+              src="/images/logo-emblem.png"
+              alt="JWAS Logo"
+              className="w-16 h-16 object-contain rounded-full shadow-sm group-hover:scale-105 transition-transform"
+            />
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-tight text-neutral-900">
+            {isRegister ? 'Create Account' : 'Sign In'}
+          </h1>
+          <p className="text-xs text-neutral-600 uppercase tracking-wider mt-1">
+            {isRegister
+              ? 'Join JWAS for persistent order tracking and bespoke service'
+              : 'Access your order history and private settings'}
+          </p>
+        </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {error && (
@@ -181,6 +189,7 @@ function LoginContent() {
             </button>
           </p>
         )}
+      </div>
       </div>
     </div>
   );

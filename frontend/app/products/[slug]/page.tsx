@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Heart, ShoppingBag, ShieldCheck, Check, Truck, AlertCircle } from 'lucide-react';
 import { apiRequest, getAuthToken, resolveImageUrl } from '@/lib/api';
 import { Product, ProductVariant } from '@/types';
+import ScrollReveal from '@/components/ScrollReveal';
 
 function ProductDetailContent() {
   const params = useParams();
@@ -113,218 +114,226 @@ function ProductDetailContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
-        {/* Images Gallery */}
-        <div className="space-y-4">
-          <div className="aspect-[3/4] w-full overflow-hidden bg-neutral-100 rounded-sm">
-            {selectedImage ? (
-              <img
-                src={resolveImageUrl(selectedImage)}
-                alt={product.name}
-                className="w-full h-full object-cover object-center"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs tracking-widest text-neutral-400 uppercase">
-                JWAS Studio
-              </div>
-            )}
-          </div>
-
-          {product.images && product.images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {product.images.map((img) => (
-                <button
-                  key={img.id}
-                  onClick={() => setSelectedImage(img.image_url)}
-                  className={`relative w-20 aspect-square overflow-hidden rounded-sm border-2 transition ${
-                    selectedImage === img.image_url ? 'border-black' : 'border-neutral-900'
-                  }`}
-                >
-                  <img
-                    src={resolveImageUrl(img.image_url)}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
+        {/* Images Gallery with Scroll Reveal */}
+        <ScrollReveal direction="left" delay={50}>
+          <div className="space-y-4">
+            <div className="aspect-[3/4] w-full overflow-hidden bg-neutral-100 rounded-sm shadow-xs border border-neutral-200/60">
+              {selectedImage ? (
+                <img
+                  src={resolveImageUrl(selectedImage)}
+                  alt={product.name}
+                  className="w-full h-full object-cover object-center transition-all duration-500 hover:scale-105"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs tracking-widest text-neutral-400 uppercase">
+                  JWAS Studio
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Product Details & Purchase Form */}
-        <div className="space-y-6">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-              SKU: {selectedVariant ? selectedVariant.sku : product.sku}
-            </span>
-            <h1 className="text-3xl font-bold uppercase tracking-tight text-neutral-900 mt-1">
-              {product.name}
-            </h1>
-          </div>
-
-          {/* Pricing */}
-          <div className="flex items-baseline gap-3">
-            <span className="text-2xl font-bold text-neutral-900">
-              ₹{Number(currentPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </span>
-            {originalPrice && Number(originalPrice) > Number(currentPrice) && (
-              <span className="text-base text-neutral-400 line-through">
-                ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-              </span>
-            )}
-            {originalPrice && Number(originalPrice) > Number(currentPrice) && (
-              <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                {Math.round(((Number(originalPrice) - Number(currentPrice)) / Number(originalPrice)) * 100)}% OFF
-              </span>
-            )}
-          </div>
-
-          {/* Description */}
-          {product.description && (
-            <p className="text-sm text-neutral-600 leading-relaxed font-light">
-              {product.description}
-            </p>
-          )}
-
-          {/* Variant Selector */}
-          {product.variants && product.variants.length > 0 && (
-            <div className="space-y-3 pt-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-neutral-900 block">
-                Select Option / Size
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {product.variants.map((v) => {
-                  const label = Object.values(v.attributes).join(' / ') || v.sku;
-                  const isSelected = selectedVariant?.id === v.id;
-                  const variantOutOfStock = v.available_stock <= 0;
-
-                  return (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVariant(v)}
-                      className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border rounded transition ${
-                        isSelected
-                          ? 'border-black bg-black text-white active:bg-neutral-950 active:text-white'
-                          : variantOutOfStock
-                          ? 'border-neutral-200 text-neutral-400 line-through bg-neutral-50'
-                          : 'border-neutral-300 text-neutral-900 hover:border-black hover:bg-neutral-50 active:bg-neutral-200 active:text-black'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Stock Availability Indicator */}
-          <div className="pt-2">
-            {isOutOfStock ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 uppercase tracking-wider">
-                <AlertCircle className="w-4 h-4" /> Currently Unavailable (Out of Stock)
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 uppercase tracking-wider">
-                <Check className="w-4 h-4" /> In Stock — {availableStock} unit(s) available
-              </span>
-            )}
-          </div>
-
-          {/* Quantity Selector */}
-          {!isOutOfStock && (
-            <div className="flex items-center gap-4 pt-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-neutral-900">
-                Quantity
-              </label>
-              <div className="flex items-center border border-neutral-300 rounded">
-                <button
-                  type="button"
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="px-3 py-1 text-sm font-bold hover:bg-neutral-100"
-                >
-                  -
-                </button>
-                <span className="px-4 py-1 text-xs font-semibold">{quantity}</span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
-                  className="px-3 py-1 text-sm font-bold hover:bg-neutral-100"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Feedback messages */}
-          {feedback && (
-            <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs rounded">
-              {feedback}
-            </div>
-          )}
-          {errorMsg && (
-            <div className="p-3 bg-red-50 text-red-800 border border-red-200 text-xs rounded">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <button
-              onClick={() => handleAddToCart(false)}
-              disabled={isOutOfStock || addingToCart}
-              className="flex-1 bg-black text-white active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-300 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
-            >
-              <ShoppingBag className="w-4 h-4 text-white" /> {addingToCart ? 'Adding...' : 'Add to Bag'}
-            </button>
-            <button
-              onClick={() => handleAddToCart(true)}
-              disabled={isOutOfStock || addingToCart}
-              className="flex-1 border-2 border-black text-black active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white active:bg-neutral-950 disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed transition"
-            >
-              Buy Now
-            </button>
-          </div>
-
-          {/* Specifications */}
-          {product.specifications && Object.keys(product.specifications).length > 0 && (
-            <div className="border-t border-neutral-200 pt-6 mt-8 space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
-                Specifications & Craft
-              </h3>
-              <dl className="grid grid-cols-2 gap-y-2 text-xs">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <React.Fragment key={key}>
-                    <dt className="text-neutral-500 uppercase tracking-wider">{key}</dt>
-                    <dd className="text-neutral-900 font-medium">{String(value)}</dd>
-                  </React.Fragment>
+            {product.images && product.images.length > 1 && (
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {product.images.map((img) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setSelectedImage(img.image_url)}
+                    className={`relative w-20 aspect-square overflow-hidden rounded-sm border-2 transition ${
+                      selectedImage === img.image_url ? 'border-black' : 'border-neutral-200 hover:border-neutral-400'
+                    }`}
+                  >
+                    <img
+                      src={resolveImageUrl(img.image_url)}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
                 ))}
-              </dl>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        </ScrollReveal>
 
-          {/* Genuine Reviews */}
-          <div className="border-t border-neutral-200 pt-6 mt-8 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
-              Customer Reviews ({reviews.length})
-            </h3>
-            {reviews.length > 0 ? (
-              <div className="space-y-4">
-                {reviews.map((r) => (
-                  <div key={r.id} className="border-b border-neutral-100 pb-3 text-xs">
-                    <div className="flex justify-between font-semibold text-neutral-800">
-                      <span>{r.customer_name}</span>
-                      <span>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                    </div>
-                    {r.comment && <p className="text-neutral-600 mt-1">{r.comment}</p>}
+        {/* Product Details & Purchase Form with Scroll Reveal */}
+        <ScrollReveal direction="right" delay={100}>
+          <div className="space-y-6">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                SKU: {selectedVariant ? selectedVariant.sku : product.sku}
+              </span>
+              <h1 className="text-3xl font-bold uppercase tracking-tight text-neutral-900 mt-1">
+                {product.name}
+              </h1>
+            </div>
+
+            {/* Pricing */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-2xl font-bold text-neutral-900">
+                ₹{Number(currentPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
+              {originalPrice && Number(originalPrice) > Number(currentPrice) && (
+                <span className="text-base text-neutral-400 line-through">
+                  ₹{Number(originalPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </span>
+              )}
+              {originalPrice && Number(originalPrice) > Number(currentPrice) && (
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                  {Math.round(((Number(originalPrice) - Number(currentPrice)) / Number(originalPrice)) * 100)}% OFF
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            {product.description && (
+              <p className="text-sm text-neutral-600 leading-relaxed font-light">
+                {product.description}
+              </p>
+            )}
+
+            {/* Variant Selector */}
+            {product.variants && product.variants.length > 0 && (
+              <div className="space-y-3 pt-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-neutral-900 block">
+                  Select Option / Size
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v) => {
+                    const label = Object.values(v.attributes).join(' / ') || v.sku;
+                    const isSelected = selectedVariant?.id === v.id;
+                    const variantOutOfStock = v.available_stock <= 0;
+
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariant(v)}
+                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border rounded transition ${
+                          isSelected
+                            ? 'border-black bg-black text-white active:bg-neutral-950 active:text-white'
+                            : variantOutOfStock
+                            ? 'border-neutral-200 text-neutral-400 line-through bg-neutral-50'
+                            : 'border-neutral-300 text-neutral-900 hover:border-black hover:bg-neutral-50 active:bg-neutral-200 active:text-black'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Stock Availability Indicator */}
+            <div className="pt-2">
+              {isOutOfStock ? (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 uppercase tracking-wider">
+                  <AlertCircle className="w-4 h-4" /> Currently Unavailable (Out of Stock)
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 uppercase tracking-wider">
+                  <Check className="w-4 h-4" /> In Stock — {availableStock} unit(s) available
+                </span>
+              )}
+            </div>
+
+            {/* Quantity Selector */}
+            {!isOutOfStock && (
+              <div className="flex items-center gap-4 pt-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-neutral-900">
+                  Quantity
+                </label>
+                <div className="flex items-center border border-neutral-300 rounded">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-3 py-1 text-sm font-bold hover:bg-neutral-100"
+                  >
+                    -
+                  </button>
+                  <span className="px-4 py-1 text-xs font-semibold">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.min(availableStock, quantity + 1))}
+                    className="px-3 py-1 text-sm font-bold hover:bg-neutral-100"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Feedback messages */}
+            {feedback && (
+              <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs rounded">
+                {feedback}
+              </div>
+            )}
+            {errorMsg && (
+              <div className="p-3 bg-red-50 text-red-800 border border-red-200 text-xs rounded">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                onClick={() => handleAddToCart(false)}
+                disabled={isOutOfStock || addingToCart}
+                className="flex-1 bg-black text-white active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-300 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+              >
+                <ShoppingBag className="w-4 h-4 text-white" /> {addingToCart ? 'Adding...' : 'Add to Bag'}
+              </button>
+              <button
+                onClick={() => handleAddToCart(true)}
+                disabled={isOutOfStock || addingToCart}
+                className="flex-1 border-2 border-black text-black active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white active:bg-neutral-950 disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed transition"
+              >
+                Buy Now
+              </button>
+            </div>
+
+            {/* Specifications */}
+            {product.specifications && Object.keys(product.specifications).length > 0 && (
+              <ScrollReveal direction="up" delay={150}>
+                <div className="border-t border-neutral-200 pt-6 mt-8 space-y-3">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                    Specifications & Craft
+                  </h3>
+                  <dl className="grid grid-cols-2 gap-y-2 text-xs">
+                    {Object.entries(product.specifications).map(([key, value]) => (
+                      <React.Fragment key={key}>
+                        <dt className="text-neutral-500 uppercase tracking-wider">{key}</dt>
+                        <dd className="text-neutral-900 font-medium">{String(value)}</dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                </div>
+              </ScrollReveal>
+            )}
+
+            {/* Genuine Reviews */}
+            <ScrollReveal direction="up" delay={200}>
+              <div className="border-t border-neutral-200 pt-6 mt-8 space-y-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+                  Customer Reviews ({reviews.length})
+                </h3>
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((r, rIdx) => (
+                      <div key={r.id} className="border-b border-neutral-100 pb-3 text-xs">
+                        <div className="flex justify-between font-semibold text-neutral-800">
+                          <span>{r.customer_name}</span>
+                          <span className="text-amber-500">{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                        </div>
+                        {r.comment && <p className="text-neutral-600 mt-1">{r.comment}</p>}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className="text-xs text-neutral-400">No customer reviews recorded for this product yet.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-xs text-neutral-400">No customer reviews recorded for this product yet.</p>
-            )}
+            </ScrollReveal>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </div>
   );

@@ -3,6 +3,9 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PwaRegister from "@/components/PwaRegister";
+import AuthGuard from "@/components/AuthGuard";
+
+export const instant = false;
 
 export const viewport: Viewport = {
   themeColor: "#022e53",
@@ -39,9 +42,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-white text-neutral-900 antialiased">
       <body className="min-h-full flex flex-col font-sans">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <AuthGuard>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </AuthGuard>
         <PwaRegister />
       </body>
     </html>

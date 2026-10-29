@@ -31,6 +31,12 @@ def create_category(
     user = Depends(require_permission("categories.create")),
     db: Session = Depends(get_db)
 ):
+    if not cat_in.image_url or not str(cat_in.image_url).strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Category image is mandatory so it is visible for customers."
+        )
+
     slug = cat_in.slug or slugify(cat_in.name)
     existing_slug = db.query(Category).filter(Category.slug == slug).first()
     if existing_slug:
@@ -77,6 +83,11 @@ def update_category(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A category cannot be its own parent.")
 
     update_data = cat_in.model_dump(exclude_unset=True)
+    if "image_url" in update_data and (not update_data["image_url"] or not str(update_data["image_url"]).strip()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Category image is mandatory so it is visible for customers."
+        )
     for field, value in update_data.items():
         setattr(cat, field, value)
 

@@ -2,20 +2,23 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingBag, Heart, User, Search, Menu, X, ShieldAlert } from 'lucide-react';
 import { apiRequest, getStoredUser, clearAuthToken, getAuthToken } from '@/lib/api';
 import { Category, Cart } from '@/types';
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [categories, setCategories] = useState<Category[]>([]);
   const [cartCount, setCartCount] = useState<number>(0);
   const [user, setUser] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     // Fetch categories dynamically from database
     apiRequest<Category[]>('/categories')
       .then((data) => {
@@ -32,10 +35,19 @@ export default function Navbar() {
       })
       .catch(() => {});
 
-    // Check user login
-    const stored = getStoredUser();
-    setUser(stored);
-  }, []);
+    // Check user login and subscribe to auth changes
+    const syncUser = () => {
+      setUser(getStoredUser());
+    };
+    syncUser();
+
+    window.addEventListener('storage', syncUser);
+    window.addEventListener('auth-change', syncUser);
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('auth-change', syncUser);
+    };
+  }, [pathname]);
 
   // Prevent background scrolling when mobile sliding drawer is open
   useEffect(() => {
@@ -72,34 +84,26 @@ export default function Navbar() {
   const handleLogout = () => {
     clearAuthToken();
     setUser(null);
-    router.push('/account/login');
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('auth-change'));
+      window.location.href = '/account/login';
+    } else {
+      router.push('/account/login');
+    }
   };
 
   const isStaff = user && (user.roles?.includes('Super Admin') || (user.permissions && user.permissions.length > 0));
 
+  // Hide Navbar only on login route
+  if (pathname === '/account/login') {
+    return null;
+  }
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-neutral-100 transition-all">
-        {/* Top utility banner: Only visible when user is logged in */}
-        {user && (
-          <div className="bg-neutral-900 text-neutral-300 text-xs py-1.5 px-4 text-center tracking-widest uppercase font-medium flex justify-between items-center max-w-7xl mx-auto">
-            <span>JWAS COUTURE & ESSENTIALS</span>
-            <div className="flex gap-4 items-center">
-              {isStaff && (
-                <Link
-                  href="/admin"
-                  className="text-amber-400 hover:text-amber-300 flex items-center gap-1 font-semibold"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" /> Staff Dashboard
-                </Link>
-              )}
-              <span>AUTHENTIC DYNAMIC COMMERCE</span>
-            </div>
-          </div>
-        )}
-
-      {/* Main navigation container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main navigation container */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Mobile menu trigger */}
           <div className="flex items-center md:hidden">
@@ -165,8 +169,17 @@ export default function Navbar() {
               <Heart className="w-5 h-5" />
             </Link>
 
-            {user ? (
+            {mounted && user ? (
               <div className="relative group flex items-center gap-2">
+                {isStaff && (
+                  <Link
+                    href="/admin"
+                    className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 hover:bg-amber-100 transition"
+                    title="Staff Dashboard"
+                  >
+                    Admin
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   className="flex items-center gap-1.5 text-xs font-medium text-neutral-800 hover:text-black uppercase tracking-wider"
@@ -197,7 +210,7 @@ export default function Navbar() {
               title="Shopping Bag"
             >
               <ShoppingBag className="w-5 h-5" />
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-black text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                   {cartCount}
                 </span>
@@ -310,7 +323,7 @@ export default function Navbar() {
 
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-neutral-200 space-y-3 text-xs">
-              {isStaff && (
+              {mounted && isStaff && (
                 <Link
                   href="/admin"
                   onClick={() => setMobileMenuOpen(false)}
@@ -320,7 +333,7 @@ export default function Navbar() {
                 </Link>
               )}
 
-              {user ? (
+              {mounted && user ? (
                 <div className="space-y-2">
                   <div className="px-1 text-[11px] text-neutral-600">
                     <p className="font-bold text-neutral-900">{user.full_name}</p>

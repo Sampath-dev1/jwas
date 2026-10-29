@@ -6,6 +6,7 @@ import { Filter, SlidersHorizontal, Search } from 'lucide-react';
 import { apiRequest, getAuthToken } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ProductCard';
+import ScrollReveal from '@/components/ScrollReveal';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -76,79 +77,87 @@ function ShopContent() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Title & Filter Bar */}
-      <div className="border-b border-neutral-200 pb-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold uppercase tracking-tight text-neutral-900">
-            {currentCategory
-              ? categories.find((c) => c.slug === currentCategory)?.name || 'Collection'
-              : isNewArrival
-              ? 'New Arrivals'
-              : isBestSeller
-              ? 'Best Sellers'
-              : 'All Collections'}
-          </h1>
-          <p className="text-xs text-neutral-500 uppercase tracking-wider mt-1">
-            {products.length} {products.length === 1 ? 'Creation Available' : 'Creations Available'}
-          </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      {/* Title & Filter Bar with Scroll Animation */}
+      <ScrollReveal direction="down" delay={50}>
+        <div className="border-b border-neutral-200 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold uppercase tracking-tight text-neutral-900">
+              {currentCategory
+                ? categories.find((c) => c.slug === currentCategory)?.name || 'Collection'
+                : isNewArrival
+                ? 'New Arrivals'
+                : isBestSeller
+                ? 'Best Sellers'
+                : 'All Collections'}
+            </h1>
+            <p className="text-xs text-neutral-500 uppercase tracking-wider mt-1">
+              {products.length} {products.length === 1 ? 'Creation Available' : 'Creations Available'}
+            </p>
+          </div>
+
+          {/* Filter Controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Category Dropdown */}
+            <select
+              value={currentCategory}
+              onChange={(e) => updateFilters(e.target.value, undefined, undefined)}
+              className="text-xs font-medium border border-neutral-300 rounded px-3 py-2 bg-white text-neutral-800 focus:outline-none focus:border-black"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.slug}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Sort Dropdown */}
+            <select
+              value={currentSort}
+              onChange={(e) => {
+                setSortOption(e.target.value);
+                updateFilters(undefined, e.target.value, undefined);
+              }}
+              className="text-xs font-medium border border-neutral-300 rounded px-3 py-2 bg-white text-neutral-800 focus:outline-none focus:border-black"
+            >
+              <option value="newest">Sort by: Newest</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="name">Product Name (A-Z)</option>
+            </select>
+          </div>
         </div>
+      </ScrollReveal>
 
-        {/* Filter Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Category Dropdown */}
-          <select
-            value={currentCategory}
-            onChange={(e) => updateFilters(e.target.value, undefined, undefined)}
-            className="text-xs font-medium border border-neutral-300 rounded px-3 py-2 bg-white text-neutral-800 focus:outline-none focus:border-black"
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.slug}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-
-          {/* Sort Dropdown */}
-          <select
-            value={currentSort}
-            onChange={(e) => {
-              setSortOption(e.target.value);
-              updateFilters(undefined, e.target.value, undefined);
-            }}
-            className="text-xs font-medium border border-neutral-300 rounded px-3 py-2 bg-white text-neutral-800 focus:outline-none focus:border-black"
-          >
-            <option value="newest">Sort by: Newest</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-            <option value="name">Product Name (A-Z)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Main Content */}
+      {/* Main Products Grid with Scroll Animations */}
       {loading ? (
-        <div className="py-24 text-center text-xs uppercase tracking-widest text-neutral-400 animate-pulse">
-          Retrieving live product catalogue...
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+            <div key={i} className="aspect-[3/4] rounded-sm skeleton-shimmer" />
+          ))}
         </div>
       ) : products.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {products.map((p, idx) => (
+            <ScrollReveal key={p.id} direction="up" delay={(idx % 4) * 80}>
+              <ProductCard product={p} />
+            </ScrollReveal>
           ))}
         </div>
       ) : (
-        <div className="py-24 text-center border border-dashed border-neutral-200 rounded-lg p-12">
-          <p className="text-sm font-medium text-neutral-700">
-            {currentSearch ? 'No products found.' : 'No products are available yet.'}
-          </p>
-          <p className="text-xs text-neutral-400 mt-2 max-w-sm mx-auto">
-            {currentSearch
-              ? `No items match the search term "${currentSearch}".`
-              : 'Our catalogue is updated continuously as new pieces are curated and published.'}
-          </p>
-        </div>
+        <ScrollReveal direction="fade" delay={100}>
+          <div className="py-24 text-center border border-dashed border-neutral-200 rounded-lg p-12">
+            <p className="text-sm font-medium text-neutral-700">
+              {currentSearch ? 'No products found.' : 'No products are available yet.'}
+            </p>
+            <p className="text-xs text-neutral-400 mt-2 max-w-sm mx-auto">
+              {currentSearch
+                ? `No items match the search term "${currentSearch}".`
+                : 'Our catalogue is updated continuously as new pieces are curated and published.'}
+            </p>
+          </div>
+        </ScrollReveal>
       )}
     </div>
   );
