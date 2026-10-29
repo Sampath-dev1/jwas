@@ -32,6 +32,23 @@ export function getSessionId(): string {
   return sid;
 }
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^|;\\s*)(' + name + ')=([^;]*)'));
+  return match ? decodeURIComponent(match[3]) : null;
+}
+
+function setPersistentCookie(name: string, value: string, days = 365) {
+  if (typeof document === 'undefined') return;
+  const maxAge = days * 24 * 60 * 60;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+function removeCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
+
 export function isStaffOrAdmin(user: any): boolean {
   if (!user) return false;
   return Boolean(
@@ -46,16 +63,25 @@ export function isStaffOrAdmin(user: any): boolean {
 
 export function getAdminAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return (
+  let token = (
     localStorage.getItem('jwas_admin_auth_token') ||
     localStorage.getItem('jwas_auth_token')
   );
+  if (!token) {
+    const cookieToken = getCookie('jwas_auth_token');
+    if (cookieToken) {
+      token = cookieToken;
+      localStorage.setItem('jwas_auth_token', cookieToken);
+    }
+  }
+  return token;
 }
 
 export function setAdminAuthToken(token: string, user?: any) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('jwas_admin_auth_token', token);
     localStorage.setItem('jwas_auth_token', token);
+    setPersistentCookie('jwas_auth_token', token, 365);
     if (user) {
       localStorage.setItem('jwas_admin_user', JSON.stringify(user));
       localStorage.setItem('jwas_user', JSON.stringify(user));
@@ -65,8 +91,13 @@ export function setAdminAuthToken(token: string, user?: any) {
 
 export function clearAdminAuthToken() {
   if (typeof window !== 'undefined') {
+    removeCookie('jwas_auth_token');
     localStorage.removeItem('jwas_admin_auth_token');
     localStorage.removeItem('jwas_admin_user');
+    localStorage.removeItem('jwas_auth_token');
+    localStorage.removeItem('jwas_user');
+    localStorage.removeItem('jwas_customer_auth_token');
+    localStorage.removeItem('jwas_customer_user');
   }
 }
 
@@ -83,20 +114,29 @@ export function getAdminUser() {
 
 export function getAuthToken(): string | null {
   if (typeof window === 'undefined') return null;
-  // If active on an /admin URL, always route through the persistent admin token
+  // If active on an /admin URL, route through admin token check
   if (window.location.pathname.startsWith('/admin')) {
     return getAdminAuthToken();
   }
-  return (
+  let token = (
     localStorage.getItem('jwas_customer_auth_token') ||
-    localStorage.getItem('jwas_auth_token') ||
-    localStorage.getItem('jwas_admin_auth_token')
+    localStorage.getItem('jwas_auth_token')
   );
+  // Persistent 1-time login for PWA and Mobile
+  if (!token) {
+    const cookieToken = getCookie('jwas_auth_token');
+    if (cookieToken) {
+      token = cookieToken;
+      localStorage.setItem('jwas_auth_token', cookieToken);
+    }
+  }
+  return token;
 }
 
 export function setAuthToken(token: string, user?: any) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('jwas_auth_token', token);
+    setPersistentCookie('jwas_auth_token', token, 365);
     if (isStaffOrAdmin(user)) {
       localStorage.setItem('jwas_admin_auth_token', token);
       if (user) localStorage.setItem('jwas_admin_user', JSON.stringify(user));
@@ -104,22 +144,21 @@ export function setAuthToken(token: string, user?: any) {
       localStorage.setItem('jwas_customer_auth_token', token);
       if (user) localStorage.setItem('jwas_customer_user', JSON.stringify(user));
     }
+    if (user) {
+      localStorage.setItem('jwas_user', JSON.stringify(user));
+    }
   }
 }
 
 export function clearAuthToken() {
   if (typeof window !== 'undefined') {
-    if (window.location.pathname.startsWith('/admin')) {
-      clearAdminAuthToken();
-      localStorage.removeItem('jwas_auth_token');
-      localStorage.removeItem('jwas_user');
-    } else {
-      // Customer tab logout: preserves admin tab session so admin edits are never interrupted
-      localStorage.removeItem('jwas_customer_auth_token');
-      localStorage.removeItem('jwas_customer_user');
-      localStorage.removeItem('jwas_auth_token');
-      localStorage.removeItem('jwas_user');
-    }
+    removeCookie('jwas_auth_token');
+    localStorage.removeItem('jwas_customer_auth_token');
+    localStorage.removeItem('jwas_customer_user');
+    localStorage.removeItem('jwas_auth_token');
+    localStorage.removeItem('jwas_user');
+    localStorage.removeItem('jwas_admin_auth_token');
+    localStorage.removeItem('jwas_admin_user');
   }
 }
 

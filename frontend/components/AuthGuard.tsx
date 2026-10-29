@@ -21,8 +21,13 @@ function AuthGuardInner({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, router]);
 
-  // When mounted on the client, if unauthenticated and not on the login route, show loading while redirecting
-  if (mounted && !authed && pathname !== '/account/login') {
+  // When on the login route, immediately display the login screen without any wrappers
+  if (pathname === '/account/login') {
+    return <>{children}</>;
+  }
+
+  // On all other routes, do NOT render child layout/tools until confirmed authenticated
+  if (!mounted || !authed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="w-6 h-6 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin" />

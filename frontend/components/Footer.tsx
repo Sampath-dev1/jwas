@@ -7,8 +7,8 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on login page
-  if (pathname === '/account/login') {
+  // Hide footer on login page and on admin pages
+  if (pathname === '/account/login' || pathname.startsWith('/admin')) {
     return null;
   }
   return (

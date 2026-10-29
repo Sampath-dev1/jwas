@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "jwas-super-secret-jwt-encryption-key-for-auth-2026-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365  # 1 year persistence for PWA and mobile users
     
     # URLs
     FRONTEND_URL: str = "http://localhost:3000"

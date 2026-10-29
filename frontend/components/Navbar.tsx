@@ -94,8 +94,8 @@ export default function Navbar() {
 
   const isStaff = user && (user.roles?.includes('Super Admin') || (user.permissions && user.permissions.length > 0));
 
-  // Hide Navbar only on login route
-  if (pathname === '/account/login') {
+  // Hide Navbar on login route and on admin pages
+  if (pathname === '/account/login' || pathname.startsWith('/admin')) {
     return null;
   }
 
@@ -171,15 +171,6 @@ export default function Navbar() {
 
             {mounted && user ? (
               <div className="relative group flex items-center gap-2">
-                {isStaff && (
-                  <Link
-                    href="/admin"
-                    className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 hover:bg-amber-100 transition"
-                    title="Staff Dashboard"
-                  >
-                    Admin
-                  </Link>
-                )}
                 <Link
                   href="/account"
                   className="flex items-center gap-1.5 text-xs font-medium text-neutral-800 hover:text-black uppercase tracking-wider"
@@ -323,16 +314,6 @@ export default function Navbar() {
 
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-neutral-200 space-y-3 text-xs">
-              {mounted && isStaff && (
-                <Link
-                  href="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full bg-amber-400/15 border border-amber-400/40 text-amber-900 px-3 py-2 rounded font-bold uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <ShieldAlert className="w-4 h-4 text-amber-600" /> Staff Control Center
-                </Link>
-              )}
-
               {mounted && user ? (
                 <div className="space-y-2">
                   <div className="px-1 text-[11px] text-neutral-600">

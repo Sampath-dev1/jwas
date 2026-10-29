@@ -5,8 +5,6 @@ import Footer from "@/components/Footer";
 import PwaRegister from "@/components/PwaRegister";
 import AuthGuard from "@/components/AuthGuard";
 
-export const instant = false;
-
 export const viewport: Viewport = {
   themeColor: "#022e53",
   width: "device-width",
