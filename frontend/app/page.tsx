@@ -181,30 +181,14 @@ export default function HomePage() {
               </div>
             </ScrollReveal>
 
-            <ScrollReveal direction="up" delay={250}>
-              <p className="mt-4 text-sm md:text-base text-neutral-300 max-w-xl mx-auto font-light leading-relaxed">
-                Designer party wear bags, artisanal coin purses, tailored kurthis & premium lifestyle essentials.
-              </p>
-            </ScrollReveal>
-
-            {/* Quick Navigation Collection Pills */}
             <ScrollReveal direction="up" delay={300}>
-              <div className="pt-2 flex flex-wrap gap-3 justify-center items-center">
+              <div className="pt-2">
                 <Link
                   href="/shop"
-                  className="group inline-flex items-center gap-2 bg-white text-black px-8 py-3.5 text-xs font-bold uppercase tracking-[0.2em] hover:bg-neutral-100 transition shadow-xl"
+                  className="group inline-flex items-center gap-3 bg-white text-black px-9 py-4 text-xs font-bold uppercase tracking-[0.2em] hover:bg-neutral-100 transition-all duration-300 shadow-2xl hover:scale-[1.02]"
                 >
-                  Explore All Products <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                  Explore All Products <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1 duration-300" />
                 </Link>
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    href={`/categories/${cat.slug}`}
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.18em] transition"
-                  >
-                    {cat.name}
-                  </Link>
-                ))}
               </div>
             </ScrollReveal>
           </div>
