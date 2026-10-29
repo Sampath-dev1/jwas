@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Package, MapPin, LogOut, ArrowRight, Clock, AlertCircle } from 'lucide-react';
-import { apiRequest, getAuthToken, clearAuthToken, getStoredUser } from '@/lib/api';
+import { Package, MapPin, LogOut, ArrowRight, Clock, AlertCircle, ShieldAlert } from 'lucide-react';
+import { apiRequest, getAuthToken, clearAuthToken, getStoredUser, isStaffOrAdmin } from '@/lib/api';
 import { Order, Address } from '@/types';
 import ScrollReveal from '@/components/ScrollReveal';
 
@@ -86,6 +86,28 @@ export default function AccountPage() {
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
+
+        {isStaffOrAdmin(user) && (
+          <div className="bg-amber-50/80 border border-amber-300 rounded-xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6">
+            <div className="space-y-1">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded">
+                <ShieldAlert className="w-3.5 h-3.5" /> Staff Operations Access
+              </span>
+              <h2 className="text-sm sm:text-base font-bold text-neutral-900">
+                Administrative Operations & Telemetry Control
+              </h2>
+              <p className="text-xs text-neutral-600">
+                You are authenticated with administrative privileges. Manage orders, inventory, products, categories, promotions, and CMS.
+              </p>
+            </div>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-2 bg-neutral-950 hover:bg-neutral-800 text-amber-400 font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider transition whitespace-nowrap shadow-xs"
+            >
+              Open Admin Console &rarr;
+            </Link>
+          </div>
+        )}
       </ScrollReveal>
 
       {/* Tabs with Scroll Animation */}

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { apiRequest, setAuthToken, setStoredUser, setAdminAuthToken, getAuthToken } from '@/lib/api';
+import { apiRequest, setAuthToken, setStoredUser, setAdminAuthToken, getAuthToken, isStaffOrAdmin } from '@/lib/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -57,20 +57,24 @@ function LoginContent() {
         setStoredUser(res.user);
       }
 
-      // Role persistence
-      const isSuper = loggedInUser?.roles?.includes('Super Admin');
-      const isStaff = isSuper || (loggedInUser?.permissions && loggedInUser.permissions.length > 0);
+      // Role persistence and destination routing:
+      // If administrator logs in -> proceed straight to Admin Control Center (/admin)
+      // If customer logs in -> proceed to storefront (/)
+      const isStaff = isStaffOrAdmin(loggedInUser);
 
       if (isStaff) {
         setAdminAuthToken(accessToken, loggedInUser);
       }
 
-      // User requirement: After logging in they should be redirected to home
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth-change'));
-        window.location.href = '/';
+        if (isStaff) {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
+        }
       } else {
-        router.push('/');
+        router.push(isStaff ? '/admin' : '/');
       }
     } catch (err: any) {
       setError(err.message || 'Authentication failed.');

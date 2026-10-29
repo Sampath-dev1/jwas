@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingBag, Heart, User, Search, Menu, X, ShieldAlert } from 'lucide-react';
-import { apiRequest, getStoredUser, clearAuthToken, getAuthToken } from '@/lib/api';
+import { apiRequest, getStoredUser, clearAuthToken, getAuthToken, isStaffOrAdmin } from '@/lib/api';
 import { Category, Cart } from '@/types';
 
 export default function Navbar() {
@@ -92,7 +92,7 @@ export default function Navbar() {
     }
   };
 
-  const isStaff = user && (user.roles?.includes('Super Admin') || (user.permissions && user.permissions.length > 0));
+  const isStaff = isStaffOrAdmin(user);
 
   // Hide Navbar on login route and on admin pages
   if (pathname === '/account/login' || pathname.startsWith('/admin')) {
@@ -106,7 +106,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Mobile menu trigger */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center md:hidden gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-neutral-700 hover:text-black focus:outline-none"
@@ -114,6 +114,15 @@ export default function Navbar() {
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
+            {mounted && isStaff && (
+              <Link
+                href="/admin"
+                className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2 py-0.5 rounded shadow-2xs transition"
+              >
+                <ShieldAlert className="w-3 h-3 text-amber-700" />
+                <span>Admin</span>
+              </Link>
+            )}
           </div>
 
           {/* Logo / Brand Wordmark */}
@@ -170,7 +179,17 @@ export default function Navbar() {
             </Link>
 
             {mounted && user ? (
-              <div className="relative group flex items-center gap-2">
+              <div className="relative group flex items-center gap-3">
+                {isStaff && (
+                  <Link
+                    href="/admin"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-md shadow-2xs transition"
+                    title="Enter Admin Control Center"
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Admin Portal</span>
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   className="flex items-center gap-1.5 text-xs font-medium text-neutral-800 hover:text-black uppercase tracking-wider"
@@ -314,6 +333,15 @@ export default function Navbar() {
 
             {/* Bottom Actions */}
             <div className="pt-4 border-t border-neutral-200 space-y-3 text-xs">
+              {mounted && isStaff && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full bg-amber-500 hover:bg-amber-600 text-neutral-950 font-bold py-2.5 rounded-lg uppercase tracking-wider text-xs shadow-xs transition"
+                >
+                  <ShieldAlert className="w-4 h-4" /> Admin Operations Console
+                </Link>
+              )}
               {mounted && user ? (
                 <div className="space-y-2">
                   <div className="px-1 text-[11px] text-neutral-600">

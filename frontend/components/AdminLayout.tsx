@@ -19,9 +19,10 @@ import {
   ChevronRight,
   ShieldAlert,
   Menu,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
-import { getStoredUser, clearAdminAuthToken, getAdminAuthToken, apiRequest } from '@/lib/api';
+import { getStoredUser, clearAdminAuthToken, getAdminAuthToken, apiRequest, isStaffOrAdmin } from '@/lib/api';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard, perm: 'reports.read' },
@@ -71,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     apiRequest('/auth/me')
       .then((me) => {
         const isSuper = me.roles?.includes('Super Admin');
-        const hasStaff = isSuper || (me.permissions && me.permissions.length > 0);
+        const hasStaff = isStaffOrAdmin(me);
         if (!hasStaff) {
           alert('Access denied. Administrator privileges are required.');
           router.push('/account');
@@ -194,6 +195,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
 
             <div className="p-4 border-t border-neutral-800 text-xs space-y-3 bg-neutral-950">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-neutral-300 hover:text-white py-1 font-semibold"
+              >
+                <ExternalLink className="w-4 h-4 text-amber-400" /> View Live Storefront
+              </Link>
               <div className="text-[11px] text-neutral-300">
                 <p className="font-semibold text-white">{user.full_name}</p>
                 <p className="font-mono text-neutral-400 truncate">{user.email}</p>
@@ -255,6 +263,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="p-4 border-t border-neutral-800 text-xs space-y-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-neutral-300 hover:text-white py-1 font-semibold transition"
+          >
+            <ExternalLink className="w-4 h-4 text-amber-400" /> View Live Storefront
+          </Link>
           <div className="text-[11px] text-neutral-300">
             <p className="font-semibold text-white">{user.full_name}</p>
             <p className="font-mono text-neutral-400 truncate">{user.email}</p>
