@@ -29,7 +29,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed max-w-xs">
-              Journey with style. Contemporary tailoring and luxury essentials engineered with uncompromising precision.
+              JOURNEY WITH A STYLE. Contemporary tailoring and luxury essentials engineered with uncompromising precision.
             </p>
           </div>
 

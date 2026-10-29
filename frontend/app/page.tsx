@@ -106,20 +106,23 @@ export default function HomePage() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-amber-400/30 via-yellow-300/20 to-amber-500/30 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
                   <img
                     src="/images/logo.png"
-                    alt="JWAS - Journey With Style"
+                    alt="JWAS - Journey With A Style"
                     className="relative w-40 sm:w-52 md:w-60 h-auto object-contain rounded-3xl shadow-2xl border border-amber-400/35 hover:scale-[1.03] transition-all duration-700 ease-out"
                   />
                 </div>
 
-                {/* Tagline matching the exact font and style from logo */}
-                <div className="space-y-1.5 text-center">
-                  <span className="inline-block px-4 py-1 rounded-full text-[10px] md:text-xs font-semibold tracking-[0.3em] uppercase text-amber-300 bg-amber-950/60 border border-amber-500/30 backdrop-blur-md">
-                    JWAS Collections
-                  </span>
-                  <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#FFF5D0] via-[#E5B744] to-[#9E6F18] drop-shadow-[0_4px_20px_rgba(229,183,68,0.5)]">
-                    JOURNEY WITH STYLE
-                  </h1>
-                </div>
+                {activeBanner.title ? (
+                  <div className="space-y-1.5 text-center">
+                    {activeBanner.subtitle && (
+                      <span className="inline-block px-4 py-1 rounded-full text-[10px] md:text-xs font-semibold tracking-[0.3em] uppercase text-amber-300 bg-amber-950/60 border border-amber-500/30 backdrop-blur-md">
+                        {activeBanner.subtitle}
+                      </span>
+                    )}
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#FFF5D0] via-[#E5B744] to-[#9E6F18] drop-shadow-[0_4px_20px_rgba(229,183,68,0.5)]">
+                      {activeBanner.title}
+                    </h1>
+                  </div>
+                ) : null}
               </div>
             </ScrollReveal>
 
@@ -165,18 +168,9 @@ export default function HomePage() {
                   <div className="absolute -inset-2 bg-gradient-to-r from-amber-400/30 via-yellow-300/20 to-amber-500/30 rounded-3xl blur-xl opacity-75 group-hover:opacity-100 transition duration-700 pointer-events-none" />
                   <img
                     src="/images/logo.png"
-                    alt="JWAS - Journey With Style"
+                    alt="JWAS - Journey With A Style"
                     className="relative w-36 sm:w-48 md:w-56 h-auto object-contain rounded-3xl shadow-2xl border border-amber-400/35 hover:scale-[1.03] transition-all duration-700 ease-out"
                   />
-                </div>
-
-                <div className="space-y-1.5 text-center">
-                  <span className="inline-block px-4 py-1 rounded-full text-[10px] md:text-xs font-semibold tracking-[0.3em] uppercase text-amber-300 bg-amber-950/60 border border-amber-500/30 backdrop-blur-md">
-                    Official JWAS Storefront
-                  </span>
-                  <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#FFF5D0] via-[#E5B744] to-[#9E6F18] drop-shadow-[0_4px_20px_rgba(229,183,68,0.5)]">
-                    JOURNEY WITH STYLE
-                  </h1>
                 </div>
               </div>
             </ScrollReveal>
