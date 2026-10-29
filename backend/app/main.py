@@ -98,6 +98,40 @@ def bootstrap_database():
         init_roles(db)
         db.close()
         create_superadmin("admin@jwas.com", "Admin@123", "System Superadmin")
+        
+        # Proactively restore all database-persisted assets to local disk
+        try:
+            db_sync = SessionLocal()
+            from app.models.models import UploadedAsset
+            assets = db_sync.query(UploadedAsset).all()
+            synced_count = 0
+            for asset in assets:
+                asset_path = os.path.join(settings.UPLOAD_DIR, asset.filename)
+                if not os.path.exists(asset_path) and asset.file_data:
+                    with open(asset_path, "wb") as f:
+                        f.write(asset.file_data)
+                    synced_count += 1
+            db_sync.close()
+            if synced_count > 0:
+                logger.info(f"Restored {synced_count} persistent uploaded asset(s) from database to local uploads directory.")
+        except Exception as e:
+            logger.warning(f"Uploaded asset sync notice: {e}")
+
+        # Seed default products if catalog is empty so products and permanent images are always ready
+        try:
+            from app.models.models import Product
+            db_check = SessionLocal()
+            prod_count = db_check.query(Product).count()
+            db_check.close()
+            if prod_count == 0:
+                from app.utils.seed import seed_sarees_catalogue
+                db_seed = SessionLocal()
+                seed_sarees_catalogue(db_seed)
+                db_seed.close()
+                logger.info("Automatic catalog bootstrap: Seeded products with permanent images.")
+        except Exception as e:
+            logger.warning(f"Catalog bootstrap seed notice: {e}")
+
         logger.info("Automatic database bootstrap successful: Superadmin ready.")
     except Exception as e:
         logger.warning(f"Startup bootstrap warning (will retry on next request): {e}")

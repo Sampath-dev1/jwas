@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Palette, Plus, Trash2, ExternalLink } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, resolveImageUrl } from '@/lib/api';
 
 export default function AdminCmsPage() {
   const [banners, setBanners] = useState<any[]>([]);
@@ -93,7 +93,7 @@ export default function AdminCmsPage() {
             {banners.map((b) => (
               <div key={b.id} className="bg-white rounded-lg border border-neutral-200 overflow-hidden shadow-xs flex flex-col justify-between">
                 <div className="aspect-[16/9] w-full bg-neutral-100 relative">
-                  <img src={b.image_url} alt="" className="w-full h-full object-cover" />
+                  <img src={resolveImageUrl(b.image_url)} alt="" className="w-full h-full object-cover" />
                   <div className="absolute top-3 right-3">
                     <button
                       onClick={() => handleDelete(b.id)}

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Heart, Trash2, ArrowRight } from 'lucide-react';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { apiRequest, getAuthToken, resolveImageUrl } from '@/lib/api';
 
 export default function WishlistPage() {
   const [items, setItems] = useState<any[]>([]);
@@ -53,7 +53,7 @@ export default function WishlistPage() {
             <div key={it.product_id} className="border border-neutral-200 rounded p-4 flex flex-col justify-between">
               <div className="aspect-[3/4] bg-neutral-100 rounded overflow-hidden mb-3">
                 {it.image_url ? (
-                  <img src={it.image_url} alt={it.name} className="w-full h-full object-cover" />
+                  <img src={resolveImageUrl(it.image_url)} alt={it.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xs text-neutral-400">JWAS</div>
                 )}

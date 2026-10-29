@@ -84,6 +84,7 @@ if __name__ == "__main__":
     subparsers = parser.add_subparsers(dest="command")
 
     init_roles_parser = subparsers.add_parser("init-roles", help="Initialize system permissions and roles")
+    seed_parser = subparsers.add_parser("seed-catalog", help="Seed default products with permanent high-res images")
 
     admin_parser = subparsers.add_parser("create-superadmin", help="Create the initial Super Admin account")
     admin_parser.add_argument("--email", required=True, help="Super admin email")
@@ -97,6 +98,14 @@ if __name__ == "__main__":
         db = SessionLocal()
         try:
             init_roles(db)
+        finally:
+            db.close()
+    elif args.command == "seed-catalog":
+        from app.utils.seed import seed_sarees_catalogue
+        db = SessionLocal()
+        try:
+            seed_sarees_catalogue(db)
+            print("Catalog seeded successfully with permanent images.")
         finally:
             db.close()
     elif args.command == "create-superadmin":

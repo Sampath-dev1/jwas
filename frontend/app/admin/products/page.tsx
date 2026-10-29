@@ -327,7 +327,7 @@ export default function AdminProductsPage() {
                         <td className="py-3 px-4 flex items-center gap-3">
                           <div className="w-12 h-14 bg-neutral-100 border border-neutral-200 rounded overflow-hidden flex-shrink-0">
                             {mainImg ? (
-                              <img src={mainImg.image_url} alt="" className="w-full h-full object-cover" />
+                              <img src={resolveImageUrl(mainImg.image_url)} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-500 font-bold">JWAS</div>
                             )}

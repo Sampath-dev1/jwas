@@ -28,29 +28,30 @@ def setup_test_database():
     init_roles(db)
     db.close()
     yield
-    # Automatic teardown: ensure test execution never leaves test records in DB
-    clean_db = next(get_db())
-    try:
-        clean_db.execute(text("DELETE FROM order_items;"))
-        clean_db.execute(text("DELETE FROM payments;"))
-        clean_db.execute(text("DELETE FROM shipments;"))
-        clean_db.execute(text("DELETE FROM returns;"))
-        clean_db.execute(text("DELETE FROM orders;"))
-        clean_db.execute(text("DELETE FROM cart_items;"))
-        clean_db.execute(text("DELETE FROM wishlist_items;"))
-        clean_db.execute(text("DELETE FROM reviews;"))
-        clean_db.execute(text("DELETE FROM inventory_movements;"))
-        clean_db.execute(text("DELETE FROM inventory;"))
-        clean_db.execute(text("DELETE FROM product_images;"))
-        clean_db.execute(text("DELETE FROM product_variants;"))
-        clean_db.execute(text("DELETE FROM products;"))
-        clean_db.execute(text("DELETE FROM categories;"))
-        clean_db.execute(text("DELETE FROM customer_profiles;"))
-        clean_db.execute(text("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email != 'admin@jwas.com');"))
-        clean_db.execute(text("DELETE FROM users WHERE email != 'admin@jwas.com';"))
-        clean_db.commit()
-    finally:
-        clean_db.close()
+    # Automatic teardown: only clean test-specific entities if explicitly running disposable CI test suite
+    if os.getenv("TEST_CLEANUP_DATABASE", "false").lower() == "true":
+        clean_db = next(get_db())
+        try:
+            clean_db.execute(text("DELETE FROM order_items;"))
+            clean_db.execute(text("DELETE FROM payments;"))
+            clean_db.execute(text("DELETE FROM shipments;"))
+            clean_db.execute(text("DELETE FROM returns;"))
+            clean_db.execute(text("DELETE FROM orders;"))
+            clean_db.execute(text("DELETE FROM cart_items;"))
+            clean_db.execute(text("DELETE FROM wishlist_items;"))
+            clean_db.execute(text("DELETE FROM reviews;"))
+            clean_db.execute(text("DELETE FROM inventory_movements;"))
+            clean_db.execute(text("DELETE FROM inventory;"))
+            clean_db.execute(text("DELETE FROM product_images;"))
+            clean_db.execute(text("DELETE FROM product_variants;"))
+            clean_db.execute(text("DELETE FROM products;"))
+            clean_db.execute(text("DELETE FROM categories;"))
+            clean_db.execute(text("DELETE FROM customer_profiles;"))
+            clean_db.execute(text("DELETE FROM user_roles WHERE user_id IN (SELECT id FROM users WHERE email != 'admin@jwas.com');"))
+            clean_db.execute(text("DELETE FROM users WHERE email != 'admin@jwas.com';"))
+            clean_db.commit()
+        finally:
+            clean_db.close()
 
 def test_empty_states_zero_fake_data():
     """

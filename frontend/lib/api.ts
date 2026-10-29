@@ -1,10 +1,23 @@
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    // If accessing via LAN IP or localhost/127.0.0.1, align backend address to matching host
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+      return `${protocol}//${hostname}:8000/api`;
+    }
+  }
   let raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
   raw = raw.trim().replace(/\/+$/, '');
   if (!raw.endsWith('/api')) {
     raw = `${raw}/api`;
   }
   return raw;
+}
+
+export function getActiveBackendBase(): string {
+  const apiUrl = getApiBaseUrl();
+  return apiUrl.replace(/\/api\/?$/, '');
 }
 
 const API_BASE = getApiBaseUrl();
@@ -163,7 +176,8 @@ export async function apiRequest<T = any>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const currentBase = getApiBaseUrl();
+  const res = await fetch(`${currentBase}${endpoint}`, {
     ...options,
     headers,
   });
@@ -198,12 +212,17 @@ export function resolveImageUrl(url: string | undefined | null): string {
     return trimmed;
   }
 
-  // If the URL contains an uploads path (e.g. /uploads/uuid.jpg or http://localhost:8000/uploads/uuid.jpg),
+  // If it's a relative path starting with /images/ or /icons/ (frontend public assets)
+  if (trimmed.startsWith('/images/') || trimmed.startsWith('/icons/')) {
+    return trimmed;
+  }
+
+  // If the URL contains an uploads path (e.g. /uploads/uuid.jpg or http://.../uploads/uuid.jpg),
   // extract the clean relative path and route to the currently active backend base URL
   const uploadIndex = trimmed.indexOf('/uploads/');
   if (uploadIndex !== -1) {
     const relativePath = trimmed.substring(uploadIndex);
-    const base = API_BASE.replace(/\/api\/?$/, '');
+    const base = getActiveBackendBase();
     return `${base}${relativePath}`;
   }
 
@@ -213,7 +232,7 @@ export function resolveImageUrl(url: string | undefined | null): string {
   }
 
   const cleanUrl = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const base = API_BASE.replace(/\/api\/?$/, '');
+  const base = getActiveBackendBase();
   return `${base}${cleanUrl}`;
 }
 
@@ -227,15 +246,16 @@ export async function uploadImage(file: File): Promise<{ url: string; relative_u
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const currentBase = getApiBaseUrl();
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/uploads/image`, {
+    res = await fetch(`${currentBase}/uploads/image`, {
       method: 'POST',
       headers,
       body: formData,
     });
   } catch (netErr: any) {
-    throw new Error(`Upload server unreachable at ${API_BASE}. Please ensure backend is running.`);
+    throw new Error(`Upload server unreachable at ${currentBase}. Please ensure backend is running.`);
   }
 
   if (!res.ok) {
