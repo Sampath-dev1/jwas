@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jwas-pwa-v1';
+const CACHE_NAME = 'jwas-pwa-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -17,7 +17,9 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS);
+      return cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.warn('PWA cache addAll non-fatal warning:', err);
+      });
     })
   );
   self.skipWaiting();

@@ -39,6 +39,13 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: 'maskable',
       },
     ],
+    prefer_related_applications: false,
+    related_applications: [
+      {
+        platform: 'webapp',
+        url: '/manifest.json',
+      },
+    ],
     shortcuts: [
       {
         name: 'Shop Collection',
