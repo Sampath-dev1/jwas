@@ -19,7 +19,7 @@ export default function PwaRegister() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // 1. Service Worker Registration (immediate if page already loaded)
+    // 1. Service Worker Registration
     const registerServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
         try {
@@ -37,23 +37,17 @@ export default function PwaRegister() {
       window.addEventListener('load', registerServiceWorker);
     }
 
-    // 2. Comprehensive Installed Status Detection
+    // 2. Standalone Check: If CURRENTLY running inside the installed standalone PWA
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true ||
       document.referrer.includes('android-app://');
 
     if (isStandalone) {
+      // Inside standalone PWA: Never display install prompt
       setIsInstalled(true);
       setShowInstallBanner(false);
       localStorage.setItem('jwas_pwa_installed', 'true');
-      return;
-    }
-
-    const storedInstalled = localStorage.getItem('jwas_pwa_installed');
-    if (storedInstalled === 'true') {
-      setIsInstalled(true);
-      setShowInstallBanner(false);
       return;
     }
 
@@ -62,30 +56,40 @@ export default function PwaRegister() {
     const isAppleDevice = /iphone|ipad|ipod/.test(ua);
     setIsIos(isAppleDevice);
 
-    // 3. Modern Chrome Android Related Apps Query
+    // 3. Modern Browser Related Apps Query (Real-time device install state)
     if ('getInstalledRelatedApps' in navigator) {
       (navigator as any)
         .getInstalledRelatedApps()
         .then((apps: any[]) => {
           if (apps && apps.length > 0) {
+            // App is actively installed on device
             setIsInstalled(true);
             setShowInstallBanner(false);
             localStorage.setItem('jwas_pwa_installed', 'true');
-            return;
+          } else {
+            // App is NOT installed (or was uninstalled!)
+            localStorage.removeItem('jwas_pwa_installed');
+            setIsInstalled(false);
+            const dismissedInSession = sessionStorage.getItem('jwas_pwa_dismissed') === 'true';
+            if (!dismissedInSession) {
+              setShowInstallBanner(true);
+            }
           }
         })
         .catch(() => {});
     }
 
     // 4. Capture native browser install prompt
+    // NOTE: The browser ONLY fires beforeinstallprompt if the PWA is NOT installed on device.
+    // If user uninstalled the app and re-opened the browser, beforeinstallprompt fires again!
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // If not installed, trigger banner prompt
-      const alreadyInstalled = localStorage.getItem('jwas_pwa_installed') === 'true';
-      if (!alreadyInstalled) {
-        setShowInstallBanner(true);
-      }
+
+      // Definite proof that the app is uninstalled / not installed:
+      localStorage.removeItem('jwas_pwa_installed');
+      setIsInstalled(false);
+      setShowInstallBanner(true);
     };
 
     const handleAppInstalled = () => {
@@ -100,20 +104,21 @@ export default function PwaRegister() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // 5. Fallback timer: Guarantees prompt appears on mobile devices
-    // (Crucial for iOS Safari & browsers where beforeinstallprompt does not fire automatically)
+    // 5. Fallback timer: Guarantees prompt appears on mobile browsers (iOS & Android)
+    // Runs when in browser mode (!isStandalone) and not dismissed in current session
     const timer = setTimeout(() => {
-      const alreadyInstalled =
-        localStorage.getItem('jwas_pwa_installed') === 'true' ||
+      const isStandaloneNow =
         window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
+        (window.navigator as any).standalone === true ||
+        document.referrer.includes('android-app://');
 
-      const dismissedInSession = sessionStorage.getItem('jwas_pwa_dismissed') === 'true';
-
-      if (!alreadyInstalled && !dismissedInSession) {
-        setShowInstallBanner(true);
+      if (!isStandaloneNow) {
+        const dismissedInSession = sessionStorage.getItem('jwas_pwa_dismissed') === 'true';
+        if (!dismissedInSession) {
+          setShowInstallBanner(true);
+        }
       }
-    }, 1200);
+    }, 1000);
 
     return () => {
       clearTimeout(timer);
@@ -158,7 +163,7 @@ export default function PwaRegister() {
 
   const pathname = usePathname();
 
-  // If already installed, NEVER show notification prompt anywhere
+  // If running inside the standalone PWA, never show install notification
   if (isInstalled) {
     return null;
   }
