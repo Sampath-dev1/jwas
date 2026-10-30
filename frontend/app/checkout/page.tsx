@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ShieldCheck, CreditCard, Banknote, ArrowRight } from 'lucide-react';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { CheckCircle2, ShieldCheck, CreditCard, Banknote, ArrowRight, Gift, Tag, X } from 'lucide-react';
+import { apiRequest, getAuthToken, resolveImageUrl } from '@/lib/api';
 import { Cart, Address, Order } from '@/types';
 
 export default function CheckoutPage() {
@@ -29,6 +29,40 @@ export default function CheckoutPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
+  // Coupon & Free Gift state
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponInput, setCouponInput] = useState<string>('');
+  const [selectedGiftVariantId, setSelectedGiftVariantId] = useState<string>('');
+  const [preview, setPreview] = useState<any>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [applyingCoupon, setApplyingCoupon] = useState<boolean>(false);
+
+  const fetchPreview = async (coupon?: string, giftVarId?: string) => {
+    try {
+      const codeToUse = coupon !== undefined ? coupon.trim().toUpperCase() : couponCode.trim().toUpperCase();
+      const giftToUse = giftVarId !== undefined ? giftVarId : selectedGiftVariantId;
+      const res: any = await apiRequest('/checkout/preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          coupon_code: codeToUse || null,
+          free_gift_variant_id: giftToUse || null,
+        }),
+      });
+      setPreview(res);
+      if (codeToUse) {
+        if (res.coupon_valid) {
+          setCouponError(null);
+          setCouponCode(codeToUse);
+          sessionStorage.setItem('jwas_applied_coupon', codeToUse);
+        } else {
+          setCouponError(res.coupon_message || 'Coupon could not be applied.');
+        }
+      }
+    } catch (err: any) {
+      console.error('Preview error:', err);
+    }
+  };
+
   useEffect(() => {
     const token = getAuthToken();
     if (!token) {
@@ -44,7 +78,19 @@ export default function CheckoutPage() {
         setCart(cartRes.value);
         if (cartRes.value.items.length === 0) {
           router.push('/cart');
+          return;
         }
+
+        const savedCoupon = sessionStorage.getItem('jwas_applied_coupon') || '';
+        const savedGift = sessionStorage.getItem('jwas_free_gift_variant') || '';
+        if (savedCoupon) {
+          setCouponCode(savedCoupon);
+          setCouponInput(savedCoupon);
+        }
+        if (savedGift) {
+          setSelectedGiftVariantId(savedGift);
+        }
+        fetchPreview(savedCoupon, savedGift);
       }
       if (addrRes.status === 'fulfilled' && Array.isArray(addrRes.value) && addrRes.value.length > 0) {
         setAddresses(addrRes.value);
@@ -55,6 +101,31 @@ export default function CheckoutPage() {
     });
   }, [router]);
 
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponInput.trim()) return;
+    setApplyingCoupon(true);
+    setCouponError(null);
+    await fetchPreview(couponInput.trim().toUpperCase(), selectedGiftVariantId);
+    setApplyingCoupon(false);
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setCouponInput('');
+    setSelectedGiftVariantId('');
+    setCouponError(null);
+    sessionStorage.removeItem('jwas_applied_coupon');
+    sessionStorage.removeItem('jwas_free_gift_variant');
+    fetchPreview('', '');
+  };
+
+  const handleSelectFreeGift = (variantId: string) => {
+    setSelectedGiftVariantId(variantId);
+    sessionStorage.setItem('jwas_free_gift_variant', variantId);
+    fetchPreview(couponCode, variantId);
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -63,6 +134,8 @@ export default function CheckoutPage() {
     try {
       const payload: any = {
         payment_method: paymentMethod,
+        coupon_code: couponCode.trim() ? couponCode.trim().toUpperCase() : undefined,
+        free_gift_variant_id: selectedGiftVariantId || undefined,
       };
 
       if (useNewAddress) {
@@ -82,6 +155,10 @@ export default function CheckoutPage() {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+
+      // Clear session coupon state on successful placement
+      sessionStorage.removeItem('jwas_applied_coupon');
+      sessionStorage.removeItem('jwas_free_gift_variant');
 
       if (paymentMethod === 'cod') {
         setCompletedOrder(order);
@@ -105,7 +182,6 @@ export default function CheckoutPage() {
           }
           setCompletedOrder(order);
         } catch (paymentErr: any) {
-          // If razorpay credentials not set, explain clearly
           setCompletedOrder(order);
           setErrorMessage(`Order placed in Pending Payment status: ${paymentErr.message}`);
         }
@@ -355,13 +431,17 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Right Column: Order Review */}
-        <div className="lg:col-span-5 bg-neutral-50 p-6 rounded-lg space-y-6 h-fit">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-3">
-            Order Review
+        {/* Right Column: Order Review & Promotions */}
+        <div className="lg:col-span-5 bg-neutral-50 border border-neutral-200/80 p-6 rounded-lg space-y-6 h-fit shadow-xs">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-neutral-900 border-b border-neutral-200 pb-3 flex items-center justify-between">
+            <span>Order Review</span>
+            <span className="text-[11px] font-normal text-neutral-500 font-mono">
+              {cart?.items.length} {cart?.items.length === 1 ? 'item' : 'items'}
+            </span>
           </h2>
 
-          <div className="divide-y divide-neutral-200 max-h-80 overflow-y-auto pr-2">
+          {/* Cart Items List */}
+          <div className="divide-y divide-neutral-200 max-h-72 overflow-y-auto pr-2">
             {cart?.items.map((item) => (
               <div key={item.id} className="py-3 flex justify-between items-center text-xs">
                 <div>
@@ -375,18 +455,187 @@ export default function CheckoutPage() {
                 </span>
               </div>
             ))}
+
+            {/* Selected Free Gift Preview item */}
+            {preview?.selected_free_gift && (
+              <div className="py-3 flex justify-between items-center text-xs bg-purple-50/80 -mx-2 px-2 rounded-md border border-purple-200/60 my-1">
+                <div className="flex items-center gap-2">
+                  <Gift className="w-4 h-4 text-purple-700 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-purple-950">{preview.selected_free_gift.product_name}</p>
+                    <p className="text-[10px] text-purple-800">
+                      Free Promotional Gift · {preview.selected_free_gift.variant_title || '1 Unit'}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-black text-emerald-700 uppercase bg-emerald-100 px-2 py-0.5 rounded text-[10px]">
+                  ₹0.00 FREE
+                </span>
+              </div>
+            )}
           </div>
 
+          {/* Coupon Code Entry & Promotion Box */}
+          <div className="border-t border-neutral-200 pt-4 space-y-3">
+            <label className="text-xs font-semibold uppercase tracking-wider text-neutral-800 block flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-neutral-600" />
+              <span>Apply Coupon / Gift Code</span>
+            </label>
+
+            {couponCode && preview?.coupon_valid ? (
+              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 p-2.5 rounded text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <div>
+                    <p className="font-mono font-bold text-emerald-950 uppercase">{couponCode}</p>
+                    <p className="text-[11px] text-emerald-700">
+                      {preview.coupon_message || 'Coupon discount active!'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="p-1 text-neutral-400 hover:text-red-600 transition"
+                  title="Remove coupon"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="e.g. FREEGIFT or VIP10"
+                  className="flex-1 text-xs border border-neutral-300 rounded px-3 py-2 bg-white uppercase font-mono tracking-wider focus:outline-none focus:border-black"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={applyingCoupon || !couponInput.trim()}
+                  className="bg-black text-white px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-neutral-800 disabled:bg-neutral-400 transition rounded"
+                >
+                  {applyingCoupon ? 'Checking...' : 'Apply'}
+                </button>
+              </div>
+            )}
+
+            {couponError && (
+              <p className="text-[11px] text-red-600 font-medium">
+                {couponError}
+              </p>
+            )}
+          </div>
+
+          {/* Free Gift Selector (When Promotion grants a Free Item) */}
+          {preview?.is_free_gift && (
+            <div className="p-3.5 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg text-xs space-y-3">
+              <div className="flex items-center gap-2 font-bold text-purple-950 uppercase tracking-wide">
+                <Gift className="w-4 h-4 text-purple-700" />
+                <span>Select Your Free Gift</span>
+              </div>
+              <p className="text-[11px] text-purple-900 leading-relaxed">
+                Choose any item from <strong>{preview.free_category_name || 'Free Gift Category'}</strong> to receive it 100% free with your order:
+              </p>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {preview.free_gift_options?.map((prod: any) =>
+                  prod.variants.map((v: any) => {
+                    const isChosen = selectedGiftVariantId === v.id;
+                    return (
+                      <div
+                        key={v.id}
+                        onClick={() => handleSelectFreeGift(v.id)}
+                        className={`p-2 rounded-md border flex items-center justify-between cursor-pointer transition ${
+                          isChosen
+                            ? 'bg-purple-100/90 border-purple-600 text-purple-950 shadow-2xs font-semibold'
+                            : 'bg-white border-purple-100 hover:border-purple-300 text-neutral-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {prod.image_url ? (
+                            <img
+                              src={resolveImageUrl(prod.image_url)}
+                              alt={prod.product_name}
+                              className="w-8 h-8 rounded object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-purple-200 flex items-center justify-center text-[9px] font-bold text-purple-800">
+                              GIFT
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="truncate text-[11px] font-medium">{prod.product_name}</p>
+                            <p className="text-[10px] text-neutral-500">
+                              {v.title || Object.values(v.attributes || {}).join(', ')} · <span className="line-through">₹{v.price}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                            isChosen ? 'bg-purple-700 text-white' : 'bg-purple-100 text-purple-800'
+                          }`}
+                        >
+                          {isChosen ? 'Selected' : 'Pick'}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Pricing Summary */}
           <div className="border-t border-neutral-200 pt-3 space-y-2 text-xs">
             <div className="flex justify-between text-neutral-600">
               <span>Subtotal</span>
               <span className="font-semibold text-neutral-900">
-                ₹{Number(cart?.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                ₹{Number(preview?.subtotal || cart?.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
             </div>
+
+            {(Number(preview?.discount) > 0 || Number(preview?.discount_amount) > 0) && (
+              <div className="flex justify-between text-emerald-700 font-bold">
+                <span>Coupon Discount ({couponCode})</span>
+                <span>-₹{Number(preview.discount || preview.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
+
+            {preview?.selected_free_gift && (
+              <div className="flex justify-between text-purple-800 font-semibold">
+                <span className="flex items-center gap-1">
+                  <Gift className="w-3.5 h-3.5 text-purple-700" /> Free Gift Item
+                </span>
+                <span className="uppercase text-[11px] bg-purple-100 text-purple-900 px-1.5 py-0.5 rounded font-bold">
+                  ₹0.00 (FREE)
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between text-neutral-600">
               <span>Shipping</span>
-              <span>Calculated at commit</span>
+              <span>
+                {Number(preview?.shipping || preview?.shipping_amount) > 0
+                  ? `₹${Number(preview.shipping || preview.shipping_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                  : 'FREE'}
+              </span>
+            </div>
+
+            {Number(preview?.tax) > 0 && (
+              <div className="flex justify-between text-neutral-600">
+                <span>Estimated Taxes</span>
+                <span>₹{Number(preview.tax).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-sm font-bold text-neutral-900 border-t border-neutral-200 pt-3">
+              <span>Total Payable</span>
+              <span>
+                ₹{Number(preview?.total || preview?.final_total || cart?.subtotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
 

@@ -252,6 +252,7 @@ class CheckoutRequest(BaseModel):
     new_shipping_address: Optional[AddressCreate] = None
     payment_method: str = "cod" # "cod" or "razorpay"
     coupon_code: Optional[str] = None
+    free_gift_variant_id: Optional[str] = None
 
 class OrderItemOut(BaseModel):
     id: str
@@ -308,8 +309,8 @@ class PaymentVerifyRequest(BaseModel):
 # Promotion schemas
 class CouponCreate(BaseModel):
     code: str
-    discount_type: str # PERCENTAGE, FIXED
-    discount_value: Decimal = Field(..., gt=0)
+    discount_type: str # PERCENTAGE, FIXED, FREE_GIFT
+    discount_value: Decimal = Field(default=Decimal("0.00"), ge=0)
     min_order_value: Decimal = Decimal("0.00")
     max_discount: Optional[Decimal] = None
     start_date: Optional[datetime] = None
@@ -318,10 +319,12 @@ class CouponCreate(BaseModel):
     per_customer_limit: int = 1
     is_active: bool = True
     applicable_categories: List[str] = []
+    free_category_id: Optional[str] = None
 
 class CouponOut(CouponCreate):
     id: str
     created_at: datetime
+    free_category_name: Optional[str] = None
 
     class Config:
         from_attributes = True

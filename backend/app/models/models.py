@@ -348,7 +348,10 @@ class Coupon(Base):
     per_customer_limit = Column(Integer, default=1, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     applicable_categories = Column(JSON, default=list, nullable=False)
+    free_category_id = Column(String(36), ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    free_category = relationship("Category", foreign_keys=[free_category_id])
 
 class CouponRedemption(Base):
     __tablename__ = "coupon_redemptions"

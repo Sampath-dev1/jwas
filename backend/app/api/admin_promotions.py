@@ -15,7 +15,14 @@ def list_coupons(
     user = Depends(require_permission("promotions.manage")),
     db: Session = Depends(get_db)
 ):
-    return db.query(Coupon).order_by(Coupon.created_at.desc()).all()
+    coupons = db.query(Coupon).order_by(Coupon.created_at.desc()).all()
+    results = []
+    for c in coupons:
+        out = CouponOut.model_validate(c)
+        if c.free_category:
+            out.free_category_name = c.free_category.name
+        results.append(out)
+    return results
 
 @router.post("/coupons", response_model=CouponOut)
 def create_coupon(
@@ -39,14 +46,18 @@ def create_coupon(
         usage_limit=coupon_in.usage_limit,
         per_customer_limit=coupon_in.per_customer_limit,
         is_active=coupon_in.is_active,
-        applicable_categories=coupon_in.applicable_categories
+        applicable_categories=coupon_in.applicable_categories,
+        free_category_id=coupon_in.free_category_id
     )
     db.add(coupon)
     db.commit()
     db.refresh(coupon)
 
     log_audit_event(db, "CREATE_COUPON", "Coupon", coupon.id, user.id, {"code": coupon.code})
-    return coupon
+    out = CouponOut.model_validate(coupon)
+    if coupon.free_category:
+        out.free_category_name = coupon.free_category.name
+    return out
 
 @router.delete("/coupons/{coupon_id}")
 def delete_coupon(

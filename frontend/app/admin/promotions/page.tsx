@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Tag, Plus, Trash2 } from 'lucide-react';
+import { Tag, Plus, Trash2, Gift } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
 import { apiRequest } from '@/lib/api';
 
 export default function AdminPromotionsPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [code, setCode] = useState('');
@@ -14,6 +15,7 @@ export default function AdminPromotionsPage() {
   const [discountValue, setDiscountValue] = useState('');
   const [minOrderValue, setMinOrderValue] = useState('0');
   const [maxDiscount, setMaxDiscount] = useState('');
+  const [freeCategoryId, setFreeCategoryId] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const loadCoupons = () => {
@@ -26,10 +28,19 @@ export default function AdminPromotionsPage() {
 
   useEffect(() => {
     loadCoupons();
+    apiRequest('/categories')
+      .then((cats) => {
+        if (Array.isArray(cats)) setCategories(cats);
+      })
+      .catch((err) => console.error('Error loading categories:', err));
   }, []);
 
   const handleCreateCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (discountType === 'FREE_GIFT' && !freeCategoryId) {
+      alert('Please select a Free Gift Category from the dropdown.');
+      return;
+    }
     setSubmitting(true);
     try {
       await apiRequest('/admin/promotions/coupons', {
@@ -37,15 +48,18 @@ export default function AdminPromotionsPage() {
         body: JSON.stringify({
           code: code.trim().toUpperCase(),
           discount_type: discountType,
-          discount_value: parseFloat(discountValue),
+          discount_value: discountType === 'FREE_GIFT' ? 0 : parseFloat(discountValue) || 0,
           min_order_value: parseFloat(minOrderValue) || 0,
           max_discount: maxDiscount ? parseFloat(maxDiscount) : null,
+          free_category_id: discountType === 'FREE_GIFT' ? freeCategoryId : null,
           is_active: true,
         }),
       });
       setShowModal(false);
       setCode('');
       setDiscountValue('');
+      setFreeCategoryId('');
+      setDiscountType('PERCENTAGE');
       loadCoupons();
     } catch (err: any) {
       alert(err.message);
@@ -107,9 +121,21 @@ export default function AdminPromotionsPage() {
                   {coupons.map((c) => (
                     <tr key={c.id} className="hover:bg-neutral-50">
                       <td className="py-3 px-4 font-mono font-bold text-neutral-900">{c.code}</td>
-                      <td className="py-3 px-4 uppercase text-neutral-600">{c.discount_type}</td>
+                      <td className="py-3 px-4 uppercase text-neutral-600">
+                        {c.discount_type === 'FREE_GIFT' ? (
+                          <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-900 px-2 py-0.5 rounded text-[10px] font-bold">
+                            <Gift className="w-3 h-3 text-purple-700" /> Free Gift
+                          </span>
+                        ) : (
+                          c.discount_type
+                        )}
+                      </td>
                       <td className="py-3 px-4 font-bold text-emerald-600">
-                        {c.discount_type === 'PERCENTAGE' ? `${c.discount_value}%` : `₹${c.discount_value}`}
+                        {c.discount_type === 'PERCENTAGE'
+                          ? `${c.discount_value}%`
+                          : c.discount_type === 'FREE_GIFT'
+                          ? `1 Free Item from ${c.free_category_name || 'Category'}`
+                          : `₹${c.discount_value}`}
                       </td>
                       <td className="py-3 px-4">₹{Number(c.min_order_value).toLocaleString('en-IN')}</td>
                       <td className="py-3 px-4">{c.max_discount ? `₹${c.max_discount}` : 'No cap'}</td>
@@ -148,7 +174,7 @@ export default function AdminPromotionsPage() {
                     value={code}
                     onChange={(e) => setCode(e.target.value.toUpperCase())}
                     className="w-full border border-neutral-300 rounded px-3 py-2 text-xs focus:outline-none focus:border-black font-mono"
-                    placeholder="e.g. JWASVIP15"
+                    placeholder="e.g. FREEGIFT or JWASVIP"
                   />
                 </div>
 
@@ -162,21 +188,53 @@ export default function AdminPromotionsPage() {
                     >
                       <option value="PERCENTAGE">Percentage (%)</option>
                       <option value="FIXED">Fixed Amount (₹)</option>
+                      <option value="FREE_GIFT">🎁 Free Gift from Category</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block font-semibold uppercase mb-1">Discount Value *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      className="w-full border border-neutral-300 rounded px-3 py-2 text-xs focus:outline-none focus:border-black"
-                      placeholder="15 or 500"
-                    />
-                  </div>
+                  {discountType !== 'FREE_GIFT' ? (
+                    <div>
+                      <label className="block font-semibold uppercase mb-1">Discount Value *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                        className="w-full border border-neutral-300 rounded px-3 py-2 text-xs focus:outline-none focus:border-black"
+                        placeholder="15 or 500"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block font-semibold uppercase mb-1">Customer Benefit</label>
+                      <div className="border border-neutral-200 bg-neutral-50 rounded px-3 py-2 text-xs text-purple-900 font-bold">
+                        100% Free Item
+                      </div>
+                    </div>
+                  )}
                 </div>
+
+                {discountType === 'FREE_GIFT' && (
+                  <div>
+                    <label className="block font-semibold uppercase mb-1">Select Free Gift Category *</label>
+                    <select
+                      required
+                      value={freeCategoryId}
+                      onChange={(e) => setFreeCategoryId(e.target.value)}
+                      className="w-full border border-purple-300 bg-purple-50/40 rounded px-3 py-2 text-xs focus:outline-none focus:border-purple-600 font-medium"
+                    >
+                      <option value="">-- Choose Category for Free Items --</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-neutral-500 mt-1">
+                      Customers who apply this coupon get to select 1 free item from this category at checkout!
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

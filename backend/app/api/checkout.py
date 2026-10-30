@@ -9,7 +9,8 @@ import string
 from app.core.database import get_db
 from app.models.models import (
     Order, OrderItem, Cart, CartItem, Inventory, InventoryMovement, 
-    Address, Coupon, CouponRedemption, ShippingMethod, TaxRule, Payment, User
+    Address, Coupon, CouponRedemption, ShippingMethod, TaxRule, Payment, User,
+    Product, ProductVariant, Category
 )
 from app.schemas.schemas import CheckoutRequest, OrderOut, PaymentInitiateResponse
 from app.permissions.deps import get_current_user
@@ -50,25 +51,107 @@ def preview_checkout(
         else:
             shipping_charge = shipping_method.rate
 
-    # Discount calculation
+    # Discount & Free Gift calculation
     discount_amount = Decimal("0.00")
+    coupon_valid = False
+    coupon_message = None
+    is_free_gift = False
+    free_category_id = None
+    free_category_name = None
+    free_gift_options = []
+    selected_free_gift = None
+
     if req.coupon_code:
+        code_clean = req.coupon_code.strip().upper()
         coupon = db.query(Coupon).filter(
-            Coupon.code == req.coupon_code.strip().upper(),
+            Coupon.code == code_clean,
             Coupon.is_active == True
         ).first()
-        if coupon:
+
+        if not coupon:
+            coupon_message = f"Coupon code '{code_clean}' is invalid or inactive."
+        else:
             now = datetime.now(timezone.utc)
-            if (not coupon.start_date or coupon.start_date <= now) and (not coupon.end_date or coupon.end_date >= now):
-                if subtotal >= coupon.min_order_value:
+            if coupon.start_date and coupon.start_date > now:
+                coupon_message = "This coupon is not yet active."
+            elif coupon.end_date and coupon.end_date < now:
+                coupon_message = "This coupon has expired."
+            elif subtotal < coupon.min_order_value:
+                coupon_message = f"Minimum order amount of ₹{coupon.min_order_value:,.2f} required for this coupon."
+            else:
+                total_used = db.query(CouponRedemption).filter(CouponRedemption.coupon_id == coupon.id).count()
+                user_used = db.query(CouponRedemption).filter(
+                    CouponRedemption.coupon_id == coupon.id,
+                    CouponRedemption.user_id == current_user.id
+                ).count()
+
+                if coupon.usage_limit and total_used >= coupon.usage_limit:
+                    coupon_message = "This coupon has reached its total usage limit."
+                elif coupon.per_customer_limit and user_used >= coupon.per_customer_limit:
+                    coupon_message = "You have already redeemed this coupon."
+                else:
+                    coupon_valid = True
                     if coupon.discount_type == "PERCENTAGE":
                         discount_amount = (subtotal * coupon.discount_value) / Decimal("100.0")
                         if coupon.max_discount and discount_amount > coupon.max_discount:
                             discount_amount = coupon.max_discount
-                    else: # FIXED
-                        discount_amount = coupon.discount_value
-                        if discount_amount > subtotal:
-                            discount_amount = subtotal
+                        coupon_message = f"Coupon '{coupon.code}' applied: {coupon.discount_value}% off (-₹{discount_amount:,.2f})"
+                    elif coupon.discount_type == "FIXED":
+                        discount_amount = min(subtotal, coupon.discount_value)
+                        coupon_message = f"Coupon '{coupon.code}' applied: Flat ₹{discount_amount:,.2f} off"
+                    elif coupon.discount_type == "FREE_GIFT":
+                        is_free_gift = True
+                        free_category_id = coupon.free_category_id
+                        if coupon.free_category:
+                            free_category_name = coupon.free_category.name
+
+                        if free_category_id:
+                            free_products = db.query(Product).filter(
+                                Product.category_id == free_category_id,
+                                Product.status == "published"
+                            ).all()
+                            for p in free_products:
+                                active_vars = [v for v in p.variants if v.is_active and v.stock_quantity > 0]
+                                if active_vars:
+                                    img = p.thumbnail_url or (p.images[0].url if p.images else None)
+                                    free_gift_options.append({
+                                        "product_id": p.id,
+                                        "product_name": p.name,
+                                        "image_url": img,
+                                        "variants": [
+                                            {
+                                                "id": v.id,
+                                                "sku": v.sku,
+                                                "title": v.title,
+                                                "price": float(v.selling_price if v.selling_price is not None else p.selling_price),
+                                                "stock": v.stock_quantity,
+                                                "attributes": v.attributes or {}
+                                            }
+                                            for v in active_vars
+                                        ]
+                                    })
+
+                        if req.free_gift_variant_id:
+                            gift_var = db.query(ProductVariant).filter(
+                                ProductVariant.id == req.free_gift_variant_id,
+                                ProductVariant.is_active == True,
+                                ProductVariant.stock_quantity > 0
+                            ).first()
+                            if gift_var and gift_var.product and gift_var.product.category_id == free_category_id:
+                                gift_val = gift_var.selling_price if gift_var.selling_price is not None else gift_var.product.selling_price
+                                selected_free_gift = {
+                                    "variant_id": gift_var.id,
+                                    "product_name": gift_var.product.name,
+                                    "variant_title": gift_var.title,
+                                    "original_price": float(gift_val),
+                                    "price": 0.00,
+                                    "image_url": gift_var.product.thumbnail_url or (gift_var.product.images[0].url if gift_var.product.images else None)
+                                }
+                                coupon_message = f"Free gift selected: {gift_var.product.name} (FREE)"
+                            else:
+                                coupon_message = f"Coupon '{coupon.code}' applied! Please select your free gift from {free_category_name or 'the free category'}."
+                        else:
+                            coupon_message = f"Coupon '{coupon.code}' applied! Please select your free gift from {free_category_name or 'the free category'}."
 
     taxable_amount = max(Decimal("0.00"), subtotal - discount_amount)
     
@@ -83,10 +166,21 @@ def preview_checkout(
     return {
         "subtotal": subtotal,
         "discount": discount_amount,
+        "discount_amount": discount_amount,
         "shipping": shipping_charge,
+        "shipping_amount": shipping_charge,
         "tax": tax_amount,
         "total": total_amount,
-        "currency": "INR"
+        "final_total": total_amount,
+        "currency": "INR",
+        "coupon_valid": coupon_valid,
+        "coupon_code": req.coupon_code if coupon_valid else None,
+        "coupon_message": coupon_message,
+        "is_free_gift": is_free_gift,
+        "free_category_id": free_category_id,
+        "free_category_name": free_category_name,
+        "free_gift_options": free_gift_options,
+        "selected_free_gift": selected_free_gift
     }
 
 @router.post("/process", response_model=OrderOut)
@@ -207,26 +301,42 @@ def process_checkout(
         else:
             shipping_charge = shipping_method.rate
 
-    # Coupon calculation
+    # Coupon & Free Gift calculation
     discount_amount = Decimal("0.00")
     coupon_obj = None
+    free_gift_variant = None
+
     if req.coupon_code:
+        code_clean = req.coupon_code.strip().upper()
         coupon_obj = db.query(Coupon).filter(
-            Coupon.code == req.coupon_code.strip().upper(),
+            Coupon.code == code_clean,
             Coupon.is_active == True
         ).first()
         if coupon_obj:
             now = datetime.now(timezone.utc)
             if (not coupon_obj.start_date or coupon_obj.start_date <= now) and (not coupon_obj.end_date or coupon_obj.end_date >= now):
                 if subtotal >= coupon_obj.min_order_value:
-                    if coupon_obj.discount_type == "PERCENTAGE":
-                        discount_amount = (subtotal * coupon_obj.discount_value) / Decimal("100.0")
-                        if coupon_obj.max_discount and discount_amount > coupon_obj.max_discount:
-                            discount_amount = coupon_obj.max_discount
-                    else:
-                        discount_amount = coupon_obj.discount_value
-                        if discount_amount > subtotal:
-                            discount_amount = subtotal
+                    tot = db.query(CouponRedemption).filter(CouponRedemption.coupon_id == coupon_obj.id).count()
+                    usr = db.query(CouponRedemption).filter(
+                        CouponRedemption.coupon_id == coupon_obj.id,
+                        CouponRedemption.user_id == current_user.id
+                    ).count()
+                    if (not coupon_obj.usage_limit or tot < coupon_obj.usage_limit) and (not coupon_obj.per_customer_limit or usr < coupon_obj.per_customer_limit):
+                        if coupon_obj.discount_type == "PERCENTAGE":
+                            discount_amount = (subtotal * coupon_obj.discount_value) / Decimal("100.0")
+                            if coupon_obj.max_discount and discount_amount > coupon_obj.max_discount:
+                                discount_amount = coupon_obj.max_discount
+                        elif coupon_obj.discount_type == "FIXED":
+                            discount_amount = min(subtotal, coupon_obj.discount_value)
+                        elif coupon_obj.discount_type == "FREE_GIFT":
+                            if req.free_gift_variant_id:
+                                gift_var = db.query(ProductVariant).filter(
+                                    ProductVariant.id == req.free_gift_variant_id,
+                                    ProductVariant.is_active == True,
+                                    ProductVariant.stock_quantity > 0
+                                ).first()
+                                if gift_var and gift_var.product and gift_var.product.category_id == coupon_obj.free_category_id:
+                                    free_gift_variant = gift_var
 
     taxable_amount = max(Decimal("0.00"), subtotal - discount_amount)
     tax_rule = db.query(TaxRule).filter(TaxRule.is_active == True).first()
@@ -269,6 +379,23 @@ def process_checkout(
         )
         db.add(order_item)
 
+    # If customer claimed a free gift under this promotional coupon, append it to the order as ₹0 item!
+    if free_gift_variant and coupon_obj:
+        gift_order_item = OrderItem(
+            order_id=order.id,
+            variant_id=free_gift_variant.id,
+            product_name_snapshot=f"{free_gift_variant.product.name} (FREE GIFT - {coupon_obj.code})",
+            sku_snapshot=free_gift_variant.sku,
+            variant_attributes_snapshot=free_gift_variant.attributes or {},
+            price_snapshot=Decimal("0.00"),
+            quantity=1,
+            total_item_amount=Decimal("0.00")
+        )
+        db.add(gift_order_item)
+
+        # Deduct 1 unit from stock for the claimed free gift
+        free_gift_variant.stock_quantity = max(0, free_gift_variant.stock_quantity - 1)
+
     # Record Payment entity
     payment = Payment(
         order_id=order.id,
@@ -281,12 +408,15 @@ def process_checkout(
     db.add(payment)
 
     # Record coupon redemption if applicable
-    if coupon_obj and discount_amount > 0:
+    if coupon_obj and (discount_amount > 0 or free_gift_variant is not None):
+        gift_val = Decimal("0.00")
+        if free_gift_variant:
+            gift_val = free_gift_variant.selling_price if free_gift_variant.selling_price is not None else free_gift_variant.product.selling_price
         redemption = CouponRedemption(
             coupon_id=coupon_obj.id,
             user_id=current_user.id,
             order_id=order.id,
-            discount_applied=discount_amount
+            discount_applied=discount_amount if discount_amount > 0 else gift_val
         )
         db.add(redemption)
 

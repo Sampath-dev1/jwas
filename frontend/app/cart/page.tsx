@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trash2, ArrowRight, ShoppingBag, ShieldCheck } from 'lucide-react';
+import { Trash2, ArrowRight, ShoppingBag, ShieldCheck, Gift, CheckCircle2 } from 'lucide-react';
 import { apiRequest, resolveImageUrl } from '@/lib/api';
 import { Cart } from '@/types';
 import ScrollReveal from '@/components/ScrollReveal';
@@ -13,6 +13,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [couponCode, setCouponCode] = useState('');
+  const [selectedGiftVariantId, setSelectedGiftVariantId] = useState<string>('');
   const [preview, setPreview] = useState<any>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
 
@@ -22,21 +23,34 @@ export default function CartPage() {
       .then((data) => {
         setCart(data);
         if (data && data.items.length > 0) {
-          fetchPreview(data, couponCode);
+          const savedCoupon = sessionStorage.getItem('jwas_applied_coupon') || '';
+          if (savedCoupon && !couponCode) setCouponCode(savedCoupon);
+          fetchPreview(data, savedCoupon || couponCode, selectedGiftVariantId);
         }
       })
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   };
 
-  const fetchPreview = (cartData: Cart, coupon: string) => {
+  const fetchPreview = (cartData: Cart, coupon: string, giftVarId?: string) => {
     apiRequest('/checkout/preview', {
       method: 'POST',
-      body: JSON.stringify({ coupon_code: coupon || null }),
+      body: JSON.stringify({ 
+        coupon_code: coupon ? coupon.trim().toUpperCase() : null,
+        free_gift_variant_id: giftVarId || null
+      }),
     })
-      .then((res) => {
+      .then((res: any) => {
         setPreview(res);
-        setCouponError(null);
+        if (res.coupon_valid) {
+          setCouponError(null);
+          if (coupon) sessionStorage.setItem('jwas_applied_coupon', coupon.trim().toUpperCase());
+        } else if (coupon && res.coupon_message) {
+          setCouponError(res.coupon_message);
+          sessionStorage.removeItem('jwas_applied_coupon');
+        } else {
+          setCouponError(null);
+        }
       })
       .catch((err) => {
         if (coupon) setCouponError(err.message || 'Invalid coupon');
@@ -44,6 +58,8 @@ export default function CartPage() {
   };
 
   useEffect(() => {
+    const savedGift = sessionStorage.getItem('jwas_free_gift_variant') || '';
+    if (savedGift) setSelectedGiftVariantId(savedGift);
     fetchCart();
   }, []);
 
@@ -55,7 +71,7 @@ export default function CartPage() {
         body: JSON.stringify({ quantity: newQty }),
       });
       setCart(updated);
-      fetchPreview(updated, couponCode);
+      fetchPreview(updated, couponCode, selectedGiftVariantId);
     } catch (err: any) {
       alert(err.message);
     }
@@ -68,7 +84,7 @@ export default function CartPage() {
       });
       setCart(updated);
       if (updated.items.length > 0) {
-        fetchPreview(updated, couponCode);
+        fetchPreview(updated, couponCode, selectedGiftVariantId);
       } else {
         setPreview(null);
       }
@@ -80,7 +96,23 @@ export default function CartPage() {
   const applyCoupon = (e: React.FormEvent) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
-    if (cart) fetchPreview(cart, couponCode.trim());
+    if (cart) fetchPreview(cart, couponCode.trim(), selectedGiftVariantId);
+  };
+
+  const handleSelectGift = (variantId: string) => {
+    setSelectedGiftVariantId(variantId);
+    sessionStorage.setItem('jwas_free_gift_variant', variantId);
+    if (cart) fetchPreview(cart, couponCode, variantId);
+  };
+
+  const handleProceedToCheckout = () => {
+    if (couponCode.trim() && preview?.coupon_valid) {
+      sessionStorage.setItem('jwas_applied_coupon', couponCode.trim().toUpperCase());
+    }
+    if (selectedGiftVariantId) {
+      sessionStorage.setItem('jwas_free_gift_variant', selectedGiftVariantId);
+    }
+    router.push('/checkout');
   };
 
   if (loading) {
@@ -207,15 +239,15 @@ export default function CartPage() {
               {/* Coupon Form */}
               <form onSubmit={applyCoupon} className="space-y-2">
                 <label className="text-xs font-semibold uppercase tracking-wider text-neutral-700 block">
-                  Promo Code
+                  Promo / Gift Code
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Enter coupon"
-                    className="flex-1 text-xs border border-neutral-300 rounded px-3 py-2 bg-white uppercase tracking-wider focus:outline-none focus:border-black"
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Enter coupon code"
+                    className="flex-1 text-xs border border-neutral-300 rounded px-3 py-2 bg-white uppercase font-mono tracking-wider focus:outline-none focus:border-black"
                   />
                   <button
                     type="submit"
@@ -224,13 +256,73 @@ export default function CartPage() {
                     Apply
                   </button>
                 </div>
-                {couponError && <p className="text-[11px] text-red-600">{couponError}</p>}
-                {preview?.discount_amount > 0 && (
-                  <p className="text-[11px] text-emerald-600">
-                    Promo applied: -₹{Number(preview.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                {couponError && <p className="text-[11px] text-red-600 font-medium">{couponError}</p>}
+                {preview?.coupon_valid && (
+                  <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
+                    {preview.coupon_message || 'Coupon applied successfully!'}
                   </p>
                 )}
               </form>
+
+              {/* Free Gift Promotion Picker */}
+              {preview?.is_free_gift && (
+                <div className="p-3.5 bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg text-xs space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-purple-950 uppercase tracking-wide">
+                    <Gift className="w-4 h-4 text-purple-700" />
+                    <span>Free Gift Unlocked!</span>
+                  </div>
+                  <p className="text-[11px] text-purple-900 leading-relaxed">
+                    Select any 1 free item from <strong>{preview.free_category_name || 'Free Gifts'}</strong>:
+                  </p>
+
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {preview.free_gift_options?.map((prod: any) =>
+                      prod.variants.map((v: any) => {
+                        const isChosen = selectedGiftVariantId === v.id;
+                        return (
+                          <div
+                            key={v.id}
+                            onClick={() => handleSelectGift(v.id)}
+                            className={`p-2 rounded-md border flex items-center justify-between cursor-pointer transition ${
+                              isChosen
+                                ? 'bg-purple-100/80 border-purple-600 text-purple-950 shadow-2xs font-semibold'
+                                : 'bg-white border-purple-100 hover:border-purple-300 text-neutral-800'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              {prod.image_url ? (
+                                <img
+                                  src={resolveImageUrl(prod.image_url)}
+                                  alt={prod.product_name}
+                                  className="w-8 h-8 rounded object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded bg-purple-200 flex items-center justify-center text-[9px] font-bold text-purple-800">
+                                  GIFT
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate text-[11px]">{prod.product_name}</p>
+                                <p className="text-[10px] text-neutral-500">
+                                  {v.title || Object.values(v.attributes || {}).join(', ')} · <span className="line-through">₹{v.price}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded font-black uppercase tracking-wider ${
+                                isChosen ? 'bg-purple-700 text-white' : 'bg-purple-100 text-purple-800'
+                              }`}
+                            >
+                              {isChosen ? 'Selected' : 'Choose'}
+                            </span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Calculations */}
               <div className="space-y-3 text-xs border-t border-neutral-200 pt-4">
@@ -241,29 +333,38 @@ export default function CartPage() {
                   </span>
                 </div>
 
-                {preview?.discount_amount > 0 && (
-                  <div className="flex justify-between text-emerald-600">
+                {(Number(preview?.discount) > 0 || Number(preview?.discount_amount) > 0) && (
+                  <div className="flex justify-between text-emerald-600 font-semibold">
                     <span>Discount</span>
-                    <span>-₹{Number(preview.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                    <span>-₹{Number(preview.discount || preview.discount_amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+
+                {preview?.selected_free_gift && (
+                  <div className="flex justify-between text-purple-700 font-semibold">
+                    <span className="flex items-center gap-1">
+                      <Gift className="w-3.5 h-3.5" /> Free Gift: {preview.selected_free_gift.product_name}
+                    </span>
+                    <span className="uppercase text-[11px] bg-purple-100 px-1.5 py-0.5 rounded">₹0.00 FREE</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-neutral-600">
                   <span>Estimated Shipping</span>
-                  <span>{preview?.shipping_amount > 0 ? `₹${preview.shipping_amount}` : 'Calculated at checkout'}</span>
+                  <span>{Number(preview?.shipping || preview?.shipping_amount) > 0 ? `₹${preview.shipping || preview.shipping_amount}` : 'Calculated at checkout'}</span>
                 </div>
 
                 <div className="flex justify-between text-sm font-bold text-neutral-900 border-t border-neutral-200 pt-3">
                   <span>Total</span>
                   <span>
-                    ₹{Number(preview?.final_total || cart.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    ₹{Number(preview?.total || preview?.final_total || cart.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
               <button
-                onClick={() => router.push('/checkout')}
-                className="w-full bg-black text-white py-3.5 px-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition rounded flex items-center justify-center gap-2"
+                onClick={handleProceedToCheckout}
+                className="w-full bg-black text-white py-3.5 px-4 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 transition rounded flex items-center justify-center gap-2 shadow"
               >
                 Proceed to Checkout <ArrowRight className="w-4 h-4" />
               </button>
