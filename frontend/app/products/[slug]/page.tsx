@@ -232,18 +232,14 @@ function ProductDetailContent() {
               </div>
             )}
 
-            {/* Stock Availability Indicator */}
-            <div className="pt-2">
-              {isOutOfStock ? (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 uppercase tracking-wider">
-                  <AlertCircle className="w-4 h-4" /> Currently Unavailable (Out of Stock)
+            {/* Out of Stock Alert (stock count hidden for in-stock items per preference) */}
+            {isOutOfStock && (
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 uppercase tracking-wider">
+                  <AlertCircle className="w-4 h-4" /> Currently Out of Stock
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 uppercase tracking-wider">
-                  <Check className="w-4 h-4" /> In Stock — {availableStock} unit(s) available
-                </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Quantity Selector */}
             {!isOutOfStock && (
@@ -286,16 +282,18 @@ function ProductDetailContent() {
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <button
+                type="button"
                 onClick={() => handleAddToCart(false)}
                 disabled={isOutOfStock || addingToCart}
-                className="flex-1 bg-black text-white active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-neutral-800 active:bg-neutral-950 disabled:bg-neutral-300 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
+                className="flex-1 bg-black text-white hover:bg-neutral-800 disabled:bg-neutral-300 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition flex items-center justify-center gap-2 rounded shadow-xs"
               >
                 <ShoppingBag className="w-4 h-4 text-white" /> {addingToCart ? 'Adding...' : 'Add to Bag'}
               </button>
               <button
+                type="button"
                 onClick={() => handleAddToCart(true)}
                 disabled={isOutOfStock || addingToCart}
-                className="flex-1 border-2 border-black text-black active:text-white py-3.5 px-6 text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white active:bg-neutral-950 disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed transition"
+                className="flex-1 bg-white text-neutral-950 border-2 border-neutral-950 hover:bg-neutral-950 hover:text-white disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition rounded shadow-xs"
               >
                 Buy Now
               </button>

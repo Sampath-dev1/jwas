@@ -46,51 +46,10 @@ dialog, [role="dialog"], .fixed {
   color-scheme: light;
 }
 
-/* Ensure button text remains crisp and high-contrast in all states */
+/* Button base styles */
 button {
   cursor: pointer;
   user-select: none;
-}
-
-button:active {
-  opacity: 0.92;
-}
-
-/* Fix any buttons that had low-contrast active text */
-button[class*="bg-black"],
-button[class*="bg-neutral-900"],
-button[class*="bg-neutral-800"],
-button[class*="bg-[#"],
-button[class*="text-white"] {
-  color: #ffffff !important;
-}
-
-button[class*="bg-black"]:active,
-button[class*="bg-neutral-900"]:active,
-button[class*="bg-neutral-800"]:active {
-  color: #ffffff !important;
-  background-color: #000000 !important;
-}
-
-button[class*="bg-white"],
-button[class*="bg-neutral-100"] {
-  color: #111111;
-}
-
-button[class*="bg-white"]:active,
-button[class*="bg-neutral-100"]:active {
-  color: #000000;
-  background-color: #e5e5e5;
-}
-
-button[class*="text-red"],
-button[class*="bg-red"] {
-  color: #dc2626 !important;
-}
-
-button[class*="bg-red-600"],
-button[class*="bg-red-700"] {
-  color: #ffffff !important;
 }
 
 /* Luxury Smooth Scroll & Animations */
