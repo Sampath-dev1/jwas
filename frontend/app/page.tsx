@@ -85,49 +85,49 @@ export default function HomePage() {
     <div className="relative space-y-24 pb-28">
       {/* Luxury Scroll Progress Bar */}
       <div
-        className="fixed top-0 left-0 h-[2.5px] bg-gradient-to-r from-neutral-900 via-amber-600 to-neutral-900 z-50 transition-all duration-150 ease-out pointer-events-none"
+        className="fixed top-0 left-0 h-[2.5px] bg-gradient-to-r from-neutral-900 via-blue-500 to-neutral-900 z-50 transition-all duration-150 ease-out pointer-events-none"
         style={{ width: `${scrollProgress}%` }}
       />
 
       {/* Hero Section */}
       {activeBanner ? (
-        <section className="relative bg-gradient-to-b from-[#021834] via-[#06172E] to-[#010814] text-white min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden pt-10 pb-28">
-          {/* Multi-layered Atmospheric Ambient Lighting matching the logo aura */}
+        <section className="relative bg-gradient-to-b from-[#030B1E] via-[#081530] to-[#020712] text-white min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden pt-10 pb-28">
+          {/* Multi-layered Atmospheric Ambient Lighting matching the royal sapphire logo aura */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="w-[700px] h-[700px] bg-gradient-to-tr from-amber-400/20 via-purple-600/15 to-sky-500/10 rounded-full blur-3xl opacity-80" />
+            <div className="w-[750px] h-[750px] bg-gradient-to-tr from-blue-600/25 via-indigo-600/20 to-sky-400/15 rounded-full blur-3xl opacity-80" />
           </div>
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-400/15 via-purple-950/20 to-transparent opacity-60 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/15 via-indigo-950/25 to-transparent opacity-75 pointer-events-none" />
 
           <div className="relative z-10 text-center max-w-4xl px-4 sm:px-6 space-y-6">
             <ScrollReveal direction="down" delay={100}>
               <div className="flex flex-col items-center justify-center space-y-4">
-                {/* Brand Logo with Golden & Violet Halo */}
+                {/* Brand Logo with Royal Sapphire Halo */}
                 <div className="relative group">
-                  <div className="absolute -inset-3 bg-gradient-to-r from-amber-400/35 via-purple-400/25 to-yellow-400/35 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-700 pointer-events-none" />
+                  <div className="absolute -inset-3 bg-gradient-to-r from-blue-600/40 via-sky-400/30 to-indigo-600/40 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-700 pointer-events-none" />
                   <img
                     src="/images/logo.png"
                     alt="JWAS - Journey With A Style"
-                    className="relative w-40 sm:w-52 md:w-60 h-auto object-contain rounded-3xl shadow-2xl border border-amber-400/40 hover:scale-[1.03] transition-all duration-700 ease-out"
+                    className="relative w-40 sm:w-52 md:w-60 h-auto object-contain rounded-3xl shadow-2xl border border-sky-400/30 hover:scale-[1.03] transition-all duration-700 ease-out"
                   />
                 </div>
 
                 {/* Brand Tagline */}
                 <div className="flex items-center justify-center gap-3 pt-2">
-                  <div className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent via-amber-400/60 to-amber-400" />
-                  <h2 className="text-xs sm:text-sm md:text-base font-extrabold uppercase tracking-[0.28em] sm:tracking-[0.35em] text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5D0] via-[#E8BA48] to-[#CAA03F] drop-shadow-[0_2px_14px_rgba(232,186,72,0.45)] select-none">
+                  <div className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent via-sky-400/60 to-blue-500" />
+                  <h2 className="text-xs sm:text-sm md:text-base font-extrabold uppercase tracking-[0.28em] sm:tracking-[0.35em] text-transparent bg-clip-text bg-gradient-to-r from-[#BAE6FD] via-[#60A5FA] to-[#1D4ED8] drop-shadow-[0_2px_16px_rgba(59,130,246,0.55)] select-none">
                     JOURNEY WITH A STYLE
                   </h2>
-                  <div className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent via-amber-400/60 to-amber-400" />
+                  <div className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent via-sky-400/60 to-blue-500" />
                 </div>
 
                 {activeBanner.title ? (
                   <div className="space-y-1.5 text-center pt-1">
                     {activeBanner.subtitle && (
-                      <span className="inline-block px-4 py-1 rounded-full text-[10px] md:text-xs font-semibold tracking-[0.3em] uppercase text-amber-300 bg-amber-950/60 border border-amber-500/30 backdrop-blur-md">
+                      <span className="inline-block px-4 py-1 rounded-full text-[10px] md:text-xs font-semibold tracking-[0.3em] uppercase text-sky-300 bg-sky-950/60 border border-sky-500/30 backdrop-blur-md">
                         {activeBanner.subtitle}
                       </span>
                     )}
-                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#FFF5D0] via-[#E5B744] to-[#9E6F18] drop-shadow-[0_4px_20px_rgba(229,183,68,0.5)]">
+                    <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#E0F2FE] via-[#60A5FA] to-[#1E40AF] drop-shadow-[0_4px_20px_rgba(37,99,235,0.5)]">
                       {activeBanner.title}
                     </h1>
                   </div>
@@ -139,10 +139,10 @@ export default function HomePage() {
               <div className="pt-2">
                 <Link
                   href={activeBanner.destination_url || '/shop'}
-                  className="group inline-flex items-center gap-3.5 bg-gradient-to-r from-[#DFB76C] via-[#F5E6BF] to-[#C99E50] text-neutral-950 px-10 py-4 text-xs font-black uppercase tracking-[0.22em] rounded-full shadow-[0_4px_30px_rgba(223,183,108,0.42)] hover:shadow-[0_6px_40px_rgba(223,183,108,0.65)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 border border-amber-300/50"
+                  className="group inline-flex items-center gap-3.5 bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] text-white px-10 py-4 text-xs font-black uppercase tracking-[0.22em] rounded-full shadow-[0_4px_30px_rgba(37,99,235,0.45)] hover:shadow-[0_6px_45px_rgba(37,99,235,0.7)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 border border-sky-300/40"
                 >
                   <span>{activeBanner.button_text || 'Explore Collection'}</span>
-                  <ArrowRight className="w-4 h-4 text-neutral-950 transition-transform group-hover:translate-x-1.5 duration-300" />
+                  <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1.5 duration-300" />
                 </Link>
               </div>
             </ScrollReveal>
@@ -158,37 +158,37 @@ export default function HomePage() {
               Scroll to Explore
             </span>
             <div className="w-4 h-7 rounded-full border border-white/30 flex items-start justify-center p-1">
-              <div className="w-1 h-1.5 bg-amber-400 rounded-full animate-gentle-bounce" />
+              <div className="w-1 h-1.5 bg-sky-400 rounded-full animate-gentle-bounce shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
             </div>
           </a>
         </section>
       ) : (
         /* Dynamic Store Hero without Background Image */
-        <section className="relative bg-gradient-to-b from-[#021834] via-[#06172E] to-[#010814] text-white min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden pt-10 pb-28">
+        <section className="relative bg-gradient-to-b from-[#030B1E] via-[#081530] to-[#020712] text-white min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden pt-10 pb-28">
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="w-[700px] h-[700px] bg-gradient-to-tr from-amber-400/20 via-purple-600/15 to-sky-500/10 rounded-full blur-3xl opacity-80" />
+            <div className="w-[750px] h-[750px] bg-gradient-to-tr from-blue-600/25 via-indigo-600/20 to-sky-400/15 rounded-full blur-3xl opacity-80" />
           </div>
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-400/15 via-purple-950/20 to-transparent opacity-60 pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/15 via-indigo-950/25 to-transparent opacity-75 pointer-events-none" />
 
           <div className="relative z-10 text-center max-w-4xl px-4 sm:px-6 space-y-6">
             <ScrollReveal direction="down" delay={100}>
               <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="relative group">
-                  <div className="absolute -inset-3 bg-gradient-to-r from-amber-400/35 via-purple-400/25 to-yellow-400/35 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-700 pointer-events-none" />
+                  <div className="absolute -inset-3 bg-gradient-to-r from-blue-600/40 via-sky-400/30 to-indigo-600/40 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-700 pointer-events-none" />
                   <img
                     src="/images/logo.png"
                     alt="JWAS - Journey With A Style"
-                    className="relative w-36 sm:w-48 md:w-56 h-auto object-contain rounded-3xl shadow-2xl border border-amber-400/40 hover:scale-[1.03] transition-all duration-700 ease-out"
+                    className="relative w-36 sm:w-48 md:w-56 h-auto object-contain rounded-3xl shadow-2xl border border-sky-400/30 hover:scale-[1.03] transition-all duration-700 ease-out"
                   />
                 </div>
 
                 {/* Brand Tagline */}
                 <div className="flex items-center justify-center gap-3 pt-2">
-                  <div className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent via-amber-400/60 to-amber-400" />
-                  <h2 className="text-xs sm:text-sm md:text-base font-extrabold uppercase tracking-[0.28em] sm:tracking-[0.35em] text-transparent bg-clip-text bg-gradient-to-r from-[#FFF5D0] via-[#E8BA48] to-[#CAA03F] drop-shadow-[0_2px_14px_rgba(232,186,72,0.45)] select-none">
+                  <div className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent via-sky-400/60 to-blue-500" />
+                  <h2 className="text-xs sm:text-sm md:text-base font-extrabold uppercase tracking-[0.28em] sm:tracking-[0.35em] text-transparent bg-clip-text bg-gradient-to-r from-[#BAE6FD] via-[#60A5FA] to-[#1D4ED8] drop-shadow-[0_2px_16px_rgba(59,130,246,0.55)] select-none">
                     JOURNEY WITH A STYLE
                   </h2>
-                  <div className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent via-amber-400/60 to-amber-400" />
+                  <div className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent via-sky-400/60 to-blue-500" />
                 </div>
               </div>
             </ScrollReveal>
@@ -197,10 +197,10 @@ export default function HomePage() {
               <div className="pt-2">
                 <Link
                   href="/shop"
-                  className="group inline-flex items-center gap-3.5 bg-gradient-to-r from-[#DFB76C] via-[#F5E6BF] to-[#C99E50] text-neutral-950 px-10 py-4 text-xs font-black uppercase tracking-[0.22em] rounded-full shadow-[0_4px_30px_rgba(223,183,108,0.42)] hover:shadow-[0_6px_40px_rgba(223,183,108,0.65)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 border border-amber-300/50"
+                  className="group inline-flex items-center gap-3.5 bg-gradient-to-r from-[#0284C7] via-[#2563EB] to-[#1D4ED8] text-white px-10 py-4 text-xs font-black uppercase tracking-[0.22em] rounded-full shadow-[0_4px_30px_rgba(37,99,235,0.45)] hover:shadow-[0_6px_45px_rgba(37,99,235,0.7)] hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 border border-sky-300/40"
                 >
                   <span>Explore All Products</span>
-                  <ArrowRight className="w-4 h-4 text-neutral-950 transition-transform group-hover:translate-x-1.5 duration-300" />
+                  <ArrowRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-1.5 duration-300" />
                 </Link>
               </div>
             </ScrollReveal>
@@ -216,7 +216,7 @@ export default function HomePage() {
               Scroll to Explore
             </span>
             <div className="w-4 h-7 rounded-full border border-white/30 flex items-start justify-center p-1">
-              <div className="w-1 h-1.5 bg-amber-400 rounded-full animate-gentle-bounce" />
+              <div className="w-1 h-1.5 bg-sky-400 rounded-full animate-gentle-bounce shadow-[0_0_8px_rgba(56,189,248,0.8)]" />
             </div>
           </a>
         </section>
