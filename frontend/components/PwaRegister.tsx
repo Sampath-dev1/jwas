@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Download, X, Share, PlusSquare, CheckCircle2, Smartphone } from 'lucide-react';
+import { Download, X, Share, PlusSquare, CheckCircle2, Smartphone, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,6 +14,7 @@ export default function PwaRegister() {
   const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const [isInAppBrowser, setIsInAppBrowser] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
@@ -51,10 +52,12 @@ export default function PwaRegister() {
       return;
     }
 
-    // Detect iOS
+    // Detect iOS & In-App Browsers (Instagram, WhatsApp, Facebook, LinkedIn, etc.)
     const ua = window.navigator.userAgent.toLowerCase();
     const isAppleDevice = /iphone|ipad|ipod/.test(ua);
+    const inApp = isAppleDevice && /fban|fbav|instagram|threads|line|micromessenger|wechat|snapchat|telegram|whatsapp|twitter|linkedin/i.test(ua);
     setIsIos(isAppleDevice);
+    setIsInAppBrowser(inApp);
 
     // 3. Modern Browser Related Apps Query (Real-time device install state)
     if ('getInstalledRelatedApps' in navigator) {
@@ -193,14 +196,16 @@ export default function PwaRegister() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <h4 className="text-xs font-black tracking-wider uppercase text-amber-300 truncate">
-                  Install JWAS App
+                  {isIos ? 'Add JWAS to iPhone' : 'Install JWAS App'}
                 </h4>
                 <span className="text-[9px] bg-amber-400/20 text-amber-200 border border-amber-400/30 px-1.5 py-0.5 rounded uppercase font-semibold">
                   Official
                 </span>
               </div>
               <p className="text-[11px] text-neutral-300 line-clamp-1 mt-0.5">
-                Install to home screen for faster shopping & persistent 1-time login.
+                {isIos
+                  ? 'Add to home screen for fullscreen luxury shopping & 1-tap access.'
+                  : 'Install to home screen for faster shopping & persistent 1-time login.'}
               </p>
             </div>
 
@@ -218,7 +223,15 @@ export default function PwaRegister() {
               onClick={handleInstallClick}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 text-neutral-950 hover:brightness-110 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition shadow-lg active:scale-95"
             >
-              <Download className="w-4 h-4" /> Install App
+              {isIos ? (
+                <>
+                  <Share className="w-4 h-4" /> Add to Home Screen
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" /> Install App
+                </>
+              )}
             </button>
             <button
               onClick={handleDismiss}
@@ -248,31 +261,71 @@ export default function PwaRegister() {
               </div>
               <div>
                 <h3 className="text-sm font-black uppercase tracking-wider text-amber-300">
-                  Add JWAS to Home Screen
+                  {isIos ? 'Install JWAS on iPhone' : 'Add JWAS to Home Screen'}
                 </h3>
-                <p className="text-xs text-neutral-400">Easy 2-step installation</p>
+                <p className="text-xs text-neutral-400">
+                  {isIos ? 'Quick iOS Setup via Safari' : 'Easy 2-step installation'}
+                </p>
               </div>
             </div>
 
             {isIos ? (
-              <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/10 text-xs">
-                <div className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
-                    1
-                  </span>
-                  <p className="text-neutral-200 leading-relaxed">
-                    Tap the <strong className="text-amber-300 inline-flex items-center gap-1 font-bold">Share <Share className="w-3.5 h-3.5 inline text-amber-300" /></strong> button at the bottom of Safari.
+              isInAppBrowser ? (
+                <div className="space-y-3 bg-amber-400/10 p-4 rounded-xl border border-amber-400/30 text-xs">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold">
+                    <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <span>In-App Browser Detected</span>
+                  </div>
+                  <p className="text-neutral-300 leading-relaxed">
+                    Apple disables &ldquo;Add to Home Screen&rdquo; inside in-app browsers (like WhatsApp, Instagram, or Facebook).
                   </p>
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                        1
+                      </span>
+                      <p className="text-neutral-200">
+                        Tap the <strong className="text-white">••• menu</strong> or <strong className="text-white">Share</strong> icon in the corner.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-2.5">
+                      <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                        2
+                      </span>
+                      <p className="text-neutral-200">
+                        Select <strong className="text-amber-300 inline-flex items-center gap-1 font-bold">Open in Safari <ExternalLink className="w-3 h-3 inline" /></strong>.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
-                    2
-                  </span>
-                  <p className="text-neutral-200 leading-relaxed">
-                    Scroll down and select <strong className="text-amber-300 inline-flex items-center gap-1 font-bold">Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-amber-300" /></strong>, then tap <strong className="text-white font-bold">Add</strong>.
-                  </p>
+              ) : (
+                <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/10 text-xs">
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                      1
+                    </span>
+                    <p className="text-neutral-200 leading-relaxed">
+                      In Safari, tap the <strong className="text-sky-300 inline-flex items-center gap-1 font-bold">Share <Share className="w-3.5 h-3.5 inline text-sky-300" /></strong> button on the bottom toolbar.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                      2
+                    </span>
+                    <p className="text-neutral-200 leading-relaxed">
+                      Scroll down the options and select <strong className="text-amber-300 inline-flex items-center gap-1 font-bold">Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-amber-300" /></strong>.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-amber-400 text-neutral-950 font-black flex items-center justify-center text-[10px] flex-shrink-0 mt-0.5">
+                      3
+                    </span>
+                    <p className="text-neutral-200 leading-relaxed">
+                      Tap <strong className="text-white font-bold">Add</strong> in the top-right corner. JWAS will now run as a standalone app!
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <div className="space-y-3 bg-white/5 p-4 rounded-xl border border-white/10 text-xs">
                 <div className="flex items-start gap-3">
@@ -299,7 +352,7 @@ export default function PwaRegister() {
                 onClick={markAsInstalled}
                 className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-400 to-amber-500 text-neutral-950 font-black uppercase tracking-wider text-xs py-2.5 px-4 rounded-xl shadow-lg hover:brightness-110 transition"
               >
-                <CheckCircle2 className="w-4 h-4" /> I&apos;ve Installed It
+                <CheckCircle2 className="w-4 h-4" /> I&apos;ve Added It
               </button>
               <button
                 onClick={() => setShowInstructions(false)}
