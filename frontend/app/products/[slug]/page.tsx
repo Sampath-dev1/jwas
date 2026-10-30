@@ -192,10 +192,17 @@ function ProductDetailContent() {
             {/* Variant Selector */}
             {product.variants && product.variants.length > 0 && (
               <div className="space-y-3 pt-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-neutral-900 block">
-                  Select Option / Size
-                </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-900 block">
+                    Select Option / Size
+                  </label>
+                  {selectedVariant && (
+                    <span className="text-xs font-medium text-neutral-500">
+                      Selected: <strong className="text-neutral-900">{Object.values(selectedVariant.attributes).join(' / ') || selectedVariant.sku}</strong>
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2.5">
                   {product.variants.map((v) => {
                     const label = Object.values(v.attributes).join(' / ') || v.sku;
                     const isSelected = selectedVariant?.id === v.id;
@@ -204,16 +211,20 @@ function ProductDetailContent() {
                     return (
                       <button
                         key={v.id}
+                        type="button"
+                        disabled={variantOutOfStock}
                         onClick={() => setSelectedVariant(v)}
-                        className={`px-4 py-2 text-xs font-bold uppercase tracking-wider border rounded transition ${
+                        className={`min-w-[4.5rem] px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-2xs flex items-center justify-center gap-1.5 ${
                           isSelected
-                            ? 'border-black bg-black text-white active:bg-neutral-950 active:text-white'
+                            ? '!bg-[#021834] !text-white border-2 border-[#021834] shadow-xs scale-[1.02]'
                             : variantOutOfStock
-                            ? 'border-neutral-200 text-neutral-400 line-through bg-neutral-50'
-                            : 'border-neutral-300 text-neutral-900 hover:border-black hover:bg-neutral-50 active:bg-neutral-200 active:text-black'
+                            ? 'bg-neutral-100 border border-neutral-200 text-neutral-400 line-through cursor-not-allowed'
+                            : 'bg-white border border-neutral-300 text-neutral-800 hover:border-black hover:text-black hover:bg-neutral-50'
                         }`}
+                        style={isSelected ? { backgroundColor: '#021834', color: '#ffffff' } : undefined}
                       >
-                        {label}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 inline stroke-[2.5]" />}
+                        <span className={isSelected ? 'text-white' : ''}>{label}</span>
                       </button>
                     );
                   })}
