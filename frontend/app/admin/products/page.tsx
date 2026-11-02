@@ -143,6 +143,21 @@ export default function AdminProductsPage() {
     });
   };
 
+  const handleReplaceImage = async (index: number, file: File) => {
+    setUploadingImage(true);
+    setUploadError(null);
+    try {
+      const res = await uploadImage(file);
+      setUploadedImages((prev) =>
+        prev.map((img, idx) => (idx === index ? { ...img, url: res.url } : img))
+      );
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to replace image.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSetMainImage = (index: number) => {
     setUploadedImages((prev) =>
       prev.map((img, idx) => ({
@@ -601,45 +616,94 @@ export default function AdminProductsPage() {
 
                   {/* Uploaded Images Preview Gallery */}
                   {uploadedImages.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 pt-2">
-                      {uploadedImages.map((img, idx) => (
-                        <div
-                          key={idx}
-                          className={`relative aspect-[3/4] rounded border-2 overflow-hidden bg-neutral-100 group ${
-                            img.is_main ? 'border-black' : 'border-neutral-200'
-                          }`}
-                        >
-                          <img
-                            src={resolveImageUrl(img.url)}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                          {img.is_main && (
-                            <span className="absolute top-1 left-1 bg-black text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">
-                              Main
-                            </span>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col justify-between p-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveUploadedImage(idx)}
-                              className="self-end p-1 bg-red-600 text-white rounded-full hover:bg-red-700"
-                              title="Delete this image"
-                            >
-                              <X className="w-3.5 h-3.5 text-white" />
-                            </button>
-                            {!img.is_main && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between text-xs text-neutral-600 font-medium">
+                        <span>Uploaded Images ({uploadedImages.length})</span>
+                        <span className="text-[11px] text-neutral-500">Tap Delete or Change on any photo</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {uploadedImages.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative flex flex-col rounded-lg border-2 bg-white overflow-hidden shadow-xs transition ${
+                              img.is_main ? 'border-neutral-950 ring-2 ring-neutral-900/10' : 'border-neutral-200'
+                            }`}
+                          >
+                            {/* Image Container */}
+                            <div className="relative aspect-[3/4] w-full bg-neutral-100 overflow-hidden group">
+                              <img
+                                src={resolveImageUrl(img.url)}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+
+                              {/* Main Cover Badge */}
+                              {img.is_main && (
+                                <span className="absolute top-1.5 left-1.5 z-10 bg-black/90 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-xs uppercase tracking-wider backdrop-blur-xs">
+                                  ★ Main
+                                </span>
+                              )}
+
+                              {/* Prominent Always-Visible Delete Button on Image (Essential for Mobile touch screens) */}
                               <button
                                 type="button"
-                                onClick={() => handleSetMainImage(idx)}
-                                className="w-full py-1 bg-white text-black text-[10px] font-bold rounded uppercase hover:bg-neutral-100"
+                                onClick={() => handleRemoveUploadedImage(idx)}
+                                className="absolute top-1.5 right-1.5 z-20 w-7 h-7 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-full shadow-md flex items-center justify-center transition"
+                                title="Delete this image"
+                                aria-label="Delete this image"
                               >
-                                Set Main
+                                <Trash2 className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                               </button>
-                            )}
+                            </div>
+
+                            {/* Card Control Bar below Image */}
+                            <div className="p-1.5 space-y-1.5 bg-neutral-50 border-t border-neutral-200">
+                              {/* Change / Replace Image Button */}
+                              <label className="w-full flex items-center justify-center gap-1.5 py-1 px-2 bg-white border border-neutral-300 hover:border-black active:bg-neutral-100 rounded text-[10px] font-bold uppercase tracking-wider text-neutral-800 cursor-pointer transition shadow-2xs">
+                                <Pencil className="w-3 h-3 text-neutral-600" />
+                                <span>Change Image</span>
+                                <input
+                                  type="file"
+                                  accept="image/*,.png,.jpg,.jpeg,.webp,.jfif,.gif,.bmp,.avif"
+                                  className="sr-only"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleReplaceImage(idx, file);
+                                    e.target.value = '';
+                                  }}
+                                />
+                              </label>
+
+                              <div className="flex gap-1.5">
+                                {!img.is_main ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSetMainImage(idx)}
+                                    className="flex-1 py-1 px-1 bg-white border border-neutral-300 hover:border-black rounded text-[10px] font-bold uppercase tracking-wider text-neutral-700 hover:text-black transition"
+                                  >
+                                    Set Main
+                                  </button>
+                                ) : (
+                                  <span className="flex-1 py-1 px-1 text-center text-[10px] font-bold uppercase tracking-wider text-neutral-500 bg-neutral-100 rounded">
+                                    Primary
+                                  </span>
+                                )}
+
+                                {/* Explicit Delete Button with Text Label */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveUploadedImage(idx)}
+                                  className="py-1 px-2 bg-red-50 hover:bg-red-100 active:bg-red-200 border border-red-200 text-red-700 hover:text-red-900 rounded text-[10px] font-bold uppercase tracking-wider transition flex items-center justify-center gap-1"
+                                  title="Delete image"
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

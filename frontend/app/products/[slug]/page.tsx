@@ -72,8 +72,10 @@ function ProductDetailContent() {
     : product.selling_price;
 
   const originalPrice = selectedVariant?.original_price || product.original_price;
-  const availableStock = selectedVariant ? selectedVariant.available_stock : 0;
+  const availableStock = selectedVariant ? (selectedVariant.available_stock ?? 0) : 0;
+  const totalStock = product.variants?.reduce((acc, v) => acc + (v.available_stock || 0), 0) ?? 0;
   const isOutOfStock = availableStock <= 0;
+  const isAllOutOfStock = !product.variants || product.variants.length === 0 || totalStock <= 0;
 
   const handleAddToCart = async (redirect: boolean = false) => {
     if (!selectedVariant) {
@@ -81,7 +83,7 @@ function ProductDetailContent() {
       return;
     }
     if (isOutOfStock) {
-      setErrorMsg('This variant is currently out of stock.');
+      setErrorMsg('This variant is currently sold out.');
       return;
     }
 
@@ -117,16 +119,26 @@ function ProductDetailContent() {
         {/* Images Gallery with Scroll Reveal */}
         <ScrollReveal direction="left" delay={50}>
           <div className="space-y-4">
-            <div className="aspect-[3/4] w-full overflow-hidden bg-neutral-100 rounded-sm shadow-xs border border-neutral-200/60">
+            <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100 rounded-sm shadow-xs border border-neutral-200/60">
               {selectedImage ? (
                 <img
                   src={resolveImageUrl(selectedImage)}
                   alt={product.name}
-                  className="w-full h-full object-cover object-center transition-all duration-500 hover:scale-105"
+                  className={`w-full h-full object-cover object-center transition-all duration-500 hover:scale-105 ${
+                    isOutOfStock ? 'grayscale-[20%]' : ''
+                  }`}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-xs tracking-widest text-neutral-400 uppercase">
                   JWAS Studio
+                </div>
+              )}
+
+              {isOutOfStock && (
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="bg-red-600 text-white text-xs font-bold px-3 py-1 tracking-widest uppercase rounded shadow-sm">
+                    Sold Out
+                  </span>
                 </div>
               )}
             </div>
@@ -166,7 +178,7 @@ function ProductDetailContent() {
             </div>
 
             {/* Pricing */}
-            <div className="flex items-baseline gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-2xl font-bold text-neutral-900">
                 ₹{Number(currentPrice).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </span>
@@ -178,6 +190,15 @@ function ProductDetailContent() {
               {originalPrice && Number(originalPrice) > Number(currentPrice) && (
                 <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
                   {Math.round(((Number(originalPrice) - Number(currentPrice)) / Number(originalPrice)) * 100)}% OFF
+                </span>
+              )}
+              {isOutOfStock ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-800 text-xs font-bold uppercase tracking-wider rounded">
+                  <AlertCircle className="w-3.5 h-3.5 text-red-600" /> Sold Out
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-bold uppercase tracking-wider rounded">
+                  ● In Stock
                 </span>
               )}
             </div>
@@ -206,25 +227,26 @@ function ProductDetailContent() {
                   {product.variants.map((v) => {
                     const label = Object.values(v.attributes).join(' / ') || v.sku;
                     const isSelected = selectedVariant?.id === v.id;
-                    const variantOutOfStock = v.available_stock <= 0;
+                    const variantOutOfStock = (v.available_stock ?? 0) <= 0;
 
                     return (
                       <button
                         key={v.id}
                         type="button"
-                        disabled={variantOutOfStock}
                         onClick={() => setSelectedVariant(v)}
                         className={`min-w-[4.5rem] px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-2xs flex items-center justify-center gap-1.5 ${
                           isSelected
                             ? '!bg-[#021834] !text-white border-2 border-[#021834] shadow-xs scale-[1.02]'
                             : variantOutOfStock
-                            ? 'bg-neutral-100 border border-neutral-200 text-neutral-400 line-through cursor-not-allowed'
+                            ? 'bg-neutral-100 border border-neutral-200 text-neutral-400 hover:bg-neutral-200'
                             : 'bg-white border border-neutral-300 text-neutral-800 hover:border-black hover:text-black hover:bg-neutral-50'
                         }`}
                         style={isSelected ? { backgroundColor: '#021834', color: '#ffffff' } : undefined}
                       >
                         {isSelected && <Check className="w-3.5 h-3.5 text-amber-400 inline stroke-[2.5]" />}
-                        <span className={isSelected ? 'text-white' : ''}>{label}</span>
+                        <span className={isSelected ? 'text-white' : ''}>
+                          {label} {variantOutOfStock ? '(Sold Out)' : ''}
+                        </span>
                       </button>
                     );
                   })}
@@ -232,12 +254,11 @@ function ProductDetailContent() {
               </div>
             )}
 
-            {/* Out of Stock Alert (stock count hidden for in-stock items per preference) */}
+            {/* Out of Stock Alert Banner */}
             {isOutOfStock && (
-              <div className="pt-2">
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 uppercase tracking-wider">
-                  <AlertCircle className="w-4 h-4" /> Currently Out of Stock
-                </span>
+              <div className="p-3 bg-red-50 border border-red-200 rounded text-xs font-bold text-red-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>Sold Out — This item/option is currently unavailable.</span>
               </div>
             )}
 
@@ -281,22 +302,35 @@ function ProductDetailContent() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <button
-                type="button"
-                onClick={() => handleAddToCart(false)}
-                disabled={isOutOfStock || addingToCart}
-                className="flex-1 bg-black text-white hover:bg-neutral-800 disabled:bg-neutral-300 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition flex items-center justify-center gap-2 rounded shadow-xs"
-              >
-                <ShoppingBag className="w-4 h-4 text-white" /> {addingToCart ? 'Adding...' : 'Add to Bag'}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleAddToCart(true)}
-                disabled={isOutOfStock || addingToCart}
-                className="flex-1 bg-white text-neutral-950 border-2 border-neutral-950 hover:bg-neutral-950 hover:text-white disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition rounded shadow-xs"
-              >
-                Buy Now
-              </button>
+              {isOutOfStock ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full bg-neutral-200 text-neutral-600 font-bold uppercase tracking-widest py-4 px-6 text-xs rounded border border-neutral-300 cursor-not-allowed flex items-center justify-center gap-2 shadow-2xs"
+                >
+                  <AlertCircle className="w-4 h-4 text-red-600" />
+                  Sold Out
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(false)}
+                    disabled={addingToCart}
+                    className="flex-1 bg-black text-white hover:bg-neutral-800 disabled:bg-neutral-300 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition flex items-center justify-center gap-2 rounded shadow-xs"
+                  >
+                    <ShoppingBag className="w-4 h-4 text-white" /> {addingToCart ? 'Adding...' : 'Add to Bag'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleAddToCart(true)}
+                    disabled={addingToCart}
+                    className="flex-1 bg-white text-neutral-950 border-2 border-neutral-950 hover:bg-neutral-950 hover:text-white disabled:border-neutral-300 disabled:text-neutral-400 disabled:cursor-not-allowed py-3.5 px-6 text-xs font-bold uppercase tracking-widest transition rounded shadow-xs"
+                  >
+                    Buy Now
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Specifications */}

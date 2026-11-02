@@ -18,8 +18,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const mainImage = rawMainImage ? resolveImageUrl(rawMainImage) : '';
   
   // Compute total available stock across variants
-  const totalStock = product.variants.reduce((acc, v) => acc + (v.available_stock || 0), 0);
-  const isOutOfStock = totalStock <= 0;
+  const totalStock = product.variants?.reduce((acc, v) => acc + (v.available_stock || 0), 0) ?? 0;
+  const isOutOfStock = !product.variants || product.variants.length === 0 || totalStock <= 0;
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -46,7 +46,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <img
             src={mainImage}
             alt={product.name}
-            className="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+            className={`h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ${
+              isOutOfStock ? 'grayscale-[25%] opacity-90' : ''
+            }`}
           />
         ) : (
           <div className="h-full w-full flex items-center justify-center text-xs tracking-widest text-neutral-400 uppercase bg-neutral-100">
@@ -55,30 +57,42 @@ export default function ProductCard({ product }: ProductCardProps) {
         )}
 
         {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          {product.is_new_arrival && (
-            <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              New
-            </span>
-          )}
-          {product.is_best_seller && (
-            <span className="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              Bestseller
-            </span>
-          )}
-          {isOutOfStock && (
-            <span className="bg-neutral-800/90 backdrop-blur-xs text-white text-[10px] font-medium px-2 py-0.5 tracking-wider uppercase">
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+          {isOutOfStock ? (
+            <span className="bg-red-600 text-white text-[10px] font-bold px-2.5 py-0.5 tracking-wider uppercase rounded-xs shadow-xs">
               Sold Out
             </span>
+          ) : (
+            <>
+              {product.is_new_arrival && (
+                <span className="bg-black text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
+                  New
+                </span>
+              )}
+              {product.is_best_seller && (
+                <span className="bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
+                  Bestseller
+                </span>
+              )}
+            </>
           )}
         </div>
+
+        {/* Sold Out Central Image Overlay */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/25 flex items-center justify-center pointer-events-none">
+            <span className="bg-black/90 text-white text-[11px] font-bold tracking-[0.2em] px-3.5 py-1.5 uppercase border border-white/20 shadow-lg backdrop-blur-xs">
+              Sold Out
+            </span>
+          </div>
+        )}
 
         {/* Wishlist button */}
         <button
           onClick={handleWishlistToggle}
           disabled={loadingWishlist}
           aria-label="Add to wishlist"
-          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm text-neutral-700 hover:text-black hover:bg-white transition"
+          className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm text-neutral-700 hover:text-black hover:bg-white transition z-10"
         >
           <Heart className={`w-4 h-4 ${inWishlist ? 'fill-red-500 text-red-500' : ''}`} />
         </button>
@@ -98,14 +112,21 @@ export default function ProductCard({ product }: ProductCardProps) {
           </h3>
         </div>
 
-        <div className="mt-1 flex items-baseline gap-2">
-          <p className="text-sm font-semibold text-neutral-900">
-            ₹{Number(product.selling_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-          </p>
-          {product.original_price && Number(product.original_price) > Number(product.selling_price) && (
-            <p className="text-xs text-neutral-400 line-through">
-              ₹{Number(product.original_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+        <div className="mt-1 flex items-baseline justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <p className="text-sm font-semibold text-neutral-900">
+              ₹{Number(product.selling_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </p>
+            {product.original_price && Number(product.original_price) > Number(product.selling_price) && (
+              <p className="text-xs text-neutral-400 line-through">
+                ₹{Number(product.original_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </p>
+            )}
+          </div>
+          {isOutOfStock && (
+            <span className="text-[10px] font-bold text-red-600 uppercase tracking-wider">
+              Sold Out
+            </span>
           )}
         </div>
       </div>

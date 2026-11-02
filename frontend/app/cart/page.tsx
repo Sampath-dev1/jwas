@@ -187,6 +187,11 @@ export default function CartPage() {
                             SKU: {item.variant_sku}
                           </p>
                         )}
+                        {item.available_stock !== undefined && item.available_stock <= 0 && (
+                          <span className="inline-block mt-1 text-[10px] font-bold uppercase text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
+                            Sold Out
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm font-bold text-neutral-900">
                         ₹{Number(item.total_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
