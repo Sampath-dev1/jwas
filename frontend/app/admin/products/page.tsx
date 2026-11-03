@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Archive, Trash2, Upload, Image as ImageIcon, X, CheckCircle2, AlertCircle, Link as LinkIcon, Loader2, Pencil } from 'lucide-react';
 import AdminLayout from '@/components/AdminLayout';
-import { apiRequest, uploadImage, resolveImageUrl } from '@/lib/api';
+import { apiRequest, uploadImage, resolveImageUrl, fetchAllAdminProducts } from '@/lib/api';
 import { Product, Category } from '@/types';
 
 export default function AdminProductsPage() {
@@ -36,7 +36,7 @@ export default function AdminProductsPage() {
   const loadData = () => {
     setLoading(true);
     Promise.allSettled([
-      apiRequest<Product[]>('/admin/products'),
+      fetchAllAdminProducts(),
       apiRequest<Category[]>('/admin/categories'),
     ]).then(([prodRes, catRes]) => {
       if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {

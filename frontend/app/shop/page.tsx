@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Filter, SlidersHorizontal, Search } from 'lucide-react';
-import { apiRequest, getAuthToken } from '@/lib/api';
+import { apiRequest, getAuthToken, fetchAllProducts } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
@@ -40,14 +40,13 @@ function ShopContent() {
     }
 
     setLoading(true);
-    const params = new URLSearchParams();
-    if (currentCategory) params.set('category', currentCategory);
-    if (currentSearch) params.set('search', currentSearch);
-    if (currentSort) params.set('sort', currentSort);
-    if (isNewArrival) params.set('new_arrival', 'true');
-    if (isBestSeller) params.set('best_seller', 'true');
-
-    apiRequest<Product[]>(`/products?${params.toString()}`)
+    fetchAllProducts({
+      category: currentCategory || undefined,
+      search: currentSearch || undefined,
+      sort: currentSort || undefined,
+      new_arrival: isNewArrival ? true : undefined,
+      best_seller: isBestSeller ? true : undefined,
+    })
       .then((data) => setProducts(data || []))
       .catch((err) => {
         console.error('Error fetching products:', err);

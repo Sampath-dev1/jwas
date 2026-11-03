@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { apiRequest, resolveImageUrl } from '@/lib/api';
+import { apiRequest, resolveImageUrl, fetchAllProducts } from '@/lib/api';
 import { Category, Product } from '@/types';
 import ProductCard from '@/components/ProductCard';
 import ScrollReveal from '@/components/ScrollReveal';
@@ -22,7 +22,7 @@ function CategoryDetailContent() {
 
     Promise.allSettled([
       apiRequest<Category>(`/categories/${slug}`),
-      apiRequest<Product[]>(`/products?category=${slug}`),
+      fetchAllProducts({ category: slug }),
     ]).then(([catRes, prodRes]) => {
       if (catRes.status === 'fulfilled') {
         setCategory(catRes.value);

@@ -1,3 +1,5 @@
+import type { Product } from '@/types';
+
 export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
@@ -315,4 +317,73 @@ export async function uploadImage(file: File): Promise<{ url: string; relative_u
     ...data,
     url: resolvedUrl,
   };
+}
+
+/**
+ * Fetches all products matching query parameters across multiple pages,
+ * ensuring no pagination limit truncates the catalogue in collections or categories.
+ */
+export async function fetchAllProducts(
+  params: Record<string, string | number | boolean | undefined> = {}
+): Promise<Product[]> {
+  let allProducts: Product[] = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        searchParams.set(key, String(val));
+      }
+    });
+    searchParams.set('page', String(page));
+    searchParams.set('limit', String(pageSize));
+
+    const res = await apiRequest<Product[]>(`/products?${searchParams.toString()}`);
+    if (!res || !Array.isArray(res) || res.length === 0) {
+      break;
+    }
+    allProducts = allProducts.concat(res);
+    if (res.length < pageSize) {
+      break;
+    }
+    page++;
+  }
+
+  return allProducts;
+}
+
+/**
+ * Fetches all products for admin management across all pages.
+ */
+export async function fetchAllAdminProducts(
+  params: Record<string, string | number | boolean | undefined> = {}
+): Promise<Product[]> {
+  let allProducts: Product[] = [];
+  let page = 1;
+  const pageSize = 100;
+
+  while (true) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        searchParams.set(key, String(val));
+      }
+    });
+    searchParams.set('page', String(page));
+    searchParams.set('limit', String(pageSize));
+
+    const res = await apiRequest<Product[]>(`/admin/products?${searchParams.toString()}`);
+    if (!res || !Array.isArray(res) || res.length === 0) {
+      break;
+    }
+    allProducts = allProducts.concat(res);
+    if (res.length < pageSize) {
+      break;
+    }
+    page++;
+  }
+
+  return allProducts;
 }
