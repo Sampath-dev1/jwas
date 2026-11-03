@@ -116,7 +116,7 @@ def list_products(
     if isinstance(limit, int) and limit > 0:
         p = page if isinstance(page, int) and page > 0 else 1
         offset = (p - 1) * limit
-        query = query.offset(offset).limit(limit)
+        products = query.offset(offset).limit(limit).all()
     else:
         products = query.all()
 
