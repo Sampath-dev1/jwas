@@ -36,7 +36,7 @@ export default function AdminProductsPage() {
   const loadData = () => {
     setLoading(true);
     Promise.allSettled([
-      apiRequest<Product[]>('/admin/products?limit=100'),
+      apiRequest<Product[]>('/admin/products'),
       apiRequest<Category[]>('/admin/categories'),
     ]).then(([prodRes, catRes]) => {
       if (prodRes.status === 'fulfilled' && Array.isArray(prodRes.value)) {

@@ -24,8 +24,8 @@ def list_admin_products(
     category_id: Optional[str] = None,
     status_filter: Optional[str] = Query(None, alias="status"),
     search: Optional[str] = None,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    page: Optional[int] = Query(None, ge=1),
+    limit: Optional[int] = Query(None, ge=1),
     user = Depends(require_permission("products.read")),
     db: Session = Depends(get_db)
 ):
@@ -38,8 +38,13 @@ def list_admin_products(
         pattern = f"%{search}%"
         query = query.filter((Product.name.ilike(pattern)) | (Product.sku.ilike(pattern)))
 
-    offset = (page - 1) * limit
-    products = query.order_by(Product.created_at.desc()).offset(offset).limit(limit).all()
+    query = query.order_by(Product.created_at.desc())
+    if isinstance(limit, int) and limit > 0:
+        p = page if isinstance(page, int) and page > 0 else 1
+        offset = (p - 1) * limit
+        products = query.offset(offset).limit(limit).all()
+    else:
+        products = query.all()
     return [serialize_product(p) for p in products]
 
 @router.post("", response_model=ProductOut)

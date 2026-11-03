@@ -68,8 +68,8 @@ def list_products(
     min_price: Optional[Decimal] = None,
     max_price: Optional[Decimal] = None,
     sort: Optional[str] = Query("newest", pattern="^(newest|price_asc|price_desc|name)$"),
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    page: Optional[int] = Query(None, ge=1),
+    limit: Optional[int] = Query(None, ge=1),
     featured: Optional[bool] = None,
     new_arrival: Optional[bool] = None,
     best_seller: Optional[bool] = None,
@@ -113,8 +113,12 @@ def list_products(
     else: # newest
         query = query.order_by(Product.created_at.desc())
 
-    offset = (page - 1) * limit
-    products = query.offset(offset).limit(limit).all()
+    if isinstance(limit, int) and limit > 0:
+        p = page if isinstance(page, int) and page > 0 else 1
+        offset = (p - 1) * limit
+        query = query.offset(offset).limit(limit)
+    else:
+        products = query.all()
 
     return [serialize_product(p) for p in products]
 
