@@ -99,23 +99,7 @@ def bootstrap_database():
         db.close()
         create_superadmin("admin@jwas.com", "Admin@123", "System Superadmin")
         
-        # Proactively restore all database-persisted assets to local disk
-        try:
-            db_sync = SessionLocal()
-            from app.models.models import UploadedAsset
-            assets = db_sync.query(UploadedAsset).all()
-            synced_count = 0
-            for asset in assets:
-                asset_path = os.path.join(settings.UPLOAD_DIR, asset.filename)
-                if not os.path.exists(asset_path) and asset.file_data:
-                    with open(asset_path, "wb") as f:
-                        f.write(asset.file_data)
-                    synced_count += 1
-            db_sync.close()
-            if synced_count > 0:
-                logger.info(f"Restored {synced_count} persistent uploaded asset(s) from database to local uploads directory.")
-        except Exception as e:
-            logger.warning(f"Uploaded asset sync notice: {e}")
+        # Note: Uploaded assets are restored on-demand via get_upload_asset to prevent OOM on memory-constrained servers.
 
         # Seed default products if catalog is empty so products and permanent images are always ready
         try:
